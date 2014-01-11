@@ -16,7 +16,7 @@ public class MainFrame extends JFrame{
         setLocationRelativeTo(null); //center in window
         addWindowListener(new WindowAdapter(){
         	public void windowClosing(WindowEvent e) { 
-                System.out.println("Exit when Closed event"); 
+                //System.out.println("Exit when Closed event"); 
                 System.exit(0);
             }
         });
