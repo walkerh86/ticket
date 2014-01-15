@@ -9,9 +9,30 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
 import java.net.SocketAddress;
+import java.net.URL;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.concurrent.BlockingQueue;
+import java.util.zip.GZIPInputStream;
 
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import javax.swing.AbstractButton;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
@@ -23,16 +44,15 @@ import javax.swing.JPasswordField;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
-import org.apache.mina.core.filterchain.IoFilter;
-import org.apache.mina.core.future.ConnectFuture;
-import org.apache.mina.core.service.IoHandlerAdapter;
-import org.apache.mina.core.session.IoSession;
-import org.apache.mina.filter.logging.LoggingFilter;
-import org.apache.mina.filter.logging.MdcInjectionFilter;
-import org.apache.mina.transport.socket.nio.NioSocketConnector;
+import net.HttpHeader;
+import net.MyHttpUrlRequest;
+import net.StringHttpResponse;
+
+import util.Log;
+import util.TextUtil;
 
 
-public class LoginFrame extends JFrame implements LoginHandler.Callback{
+public class FrameLogin extends JFrame{
 	private JTextField mCaptchaInput;
 	private JLabel mCaptchaImg;
 	private JTextField mUserNameInput;
@@ -40,43 +60,13 @@ public class LoginFrame extends JFrame implements LoginHandler.Callback{
 	private JLabel mResponse;
 	private OnLogInListener mOnLogInListener;
 	
-	private NioSocketConnector mConnector;
-	private LoginHandler mLoginHandler;
-	private IoSession mSession;
-	private static final String LOGIN_URL = "www.baidu.com";
+	private static final String HOST_URL = "kyfw.12306.cn";
+	private static final String COOKIE_URL = "https://kyfw.12306.cn/otn/";
+	private BlockingQueue<MyHttpUrlRequest> mRequestQueue;
+	private UserInfo mUserInfo;
 	
-	public LoginFrame(){		
+	public FrameLogin(){
 		initFrame();
-		initNetwork();
-	}
-	
-	private void initNetwork(){
-		mLoginHandler = new LoginHandler(this);
-		NioSocketConnector connector = new NioSocketConnector();
-		mConnector = connector;
-		try {
-            IoFilter LOGGING_FILTER = new LoggingFilter();
-/*
-            IoFilter CODEC_FILTER = new ProtocolCodecFilter(
-                    new TextLineCodecFactory());
-            */
-            //connector.getFilterChain().addLast("mdc", new MdcInjectionFilter());
-            //connector.getFilterChain().addLast("codec", CODEC_FILTER);
-            //connector.getFilterChain().addLast("logger", LOGGING_FILTER);
-
-            connector.setHandler(mLoginHandler);
-            System.out.print("mina connect begin\n");
-            ConnectFuture future1 = connector.connect(new InetSocketAddress(LOGIN_URL, 80));
-            future1.awaitUninterruptibly();
-            if (!future1.isConnected()) {
-            	 System.out.print("mina connect return\n");
-                return;
-            }
-            mSession = future1.getSession();
-            //login();
-        } catch (Exception e) {
-        	System.out.print(e);
-        }
 	}
 	
 	private void initFrame(){
@@ -96,7 +86,7 @@ public class LoginFrame extends JFrame implements LoginHandler.Callback{
 	
 	private void initFrameLayout(){
 		JPanel panel = new JPanel();
-		BoxLayout boxLayout = new BoxLayout(panel,BoxLayout.Y_AXIS);
+		//BoxLayout boxLayout = new BoxLayout(panel,BoxLayout.Y_AXIS);
 		panel.setLayout(null);		
 		this.add(panel);
 				
@@ -180,12 +170,49 @@ public class LoginFrame extends JFrame implements LoginHandler.Callback{
 		loginBtn.setText("µÇÂ½");
 		loginBtn.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent evt) {
-				if(mOnLogInListener != null){
-					mOnLogInListener.OnLogIn();
+				if(checkUserInput()){
+					if(mOnLogInListener != null){
+						mOnLogInListener.OnLogIn();
+					}
 				}
 			}
 		});
 		panel.add(loginBtn);
+	}
+	
+	private boolean checkUserInput(){
+		if(TextUtil.isEmpty(mUserNameInput.getText())){
+			return false;
+		}
+		if(TextUtil.isEmpty(new String(mUserPwInput.getPassword()))){
+			return false;
+		}
+		
+		if(TextUtil.isEmpty(mCaptchaInput.getText()) || mCaptchaInput.getText().length() < 4){
+			return false;
+		}
+		
+		saveUserInfo();
+		
+		return true;
+	}
+	
+	private void saveUserInfo(){
+		mUserInfo.setUserName(mUserNameInput.getText());
+		mUserInfo.setUserPw(new String(mUserPwInput.getPassword()));
+		mUserInfo.setCaptchaCode(mCaptchaInput.getText());
+	}
+	
+	public void setCaptchaIcon(ImageIcon icon){
+		mCaptchaImg.setIcon(icon);
+	}
+	
+	public void setUserInfo(UserInfo userInfo){
+		mUserInfo = userInfo;
+		mUserNameInput.setText(mUserInfo.getUserName());
+		mUserNameInput.setCaretPosition(mUserNameInput.getText().length());
+		mUserPwInput.setText(mUserInfo.getUserPw());
+		//mUserPwInput.setCaretPosition(mUserPwInput.getPassword().length());
 	}
 	
 	public void setResponseResult(String result){
@@ -199,50 +226,4 @@ public class LoginFrame extends JFrame implements LoginHandler.Callback{
 	public interface OnLogInListener{
 		public void OnLogIn();
 	}
-	
-
-    public void connected() {
-        //client.login();
-    }
-
-    public void disconnected() {
-        System.out.print("Connection closed.\n");
-    }
-
-    public void error(String message) {
-    	System.out.print("error message="+message+"\n");
-    }
-
-    public void loggedIn() {
-        System.out.print("You have joined the chat session.\n");
-    }
-
-    public void loggedOut() {
-    	System.out.print("You have left the chat session.\n");
-    }
-
-    public void messageReceived(String message) {
-    	System.out.print(message + "\n");
-    }	
-    
-    private SocketAddress parseSocketAddress(String s) {
-        s = s.trim();
-        int colonIndex = s.indexOf(":");
-        if (colonIndex > 0) {
-            String host = s.substring(0, colonIndex);
-            int port = parsePort(s.substring(colonIndex + 1));
-            return new InetSocketAddress(host, port);
-        } else {
-            int port = parsePort(s.substring(colonIndex + 1));
-            return new InetSocketAddress(port);
-        }
-    }
-    
-    private int parsePort(String s) {
-        try {
-            return Integer.parseInt(s);
-        } catch (NumberFormatException nfe) {
-            throw new IllegalArgumentException("Illegal port number: " + s);
-        }
-    }
 }

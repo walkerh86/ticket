@@ -1,21 +1,60 @@
 import java.awt.Frame;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.PriorityBlockingQueue;
+
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+
+import net.CookieManager;
+import net.HttpDispatcher;
+import net.MyHttpResponse;
+import net.MyHttpUrlRequest;
 
 public class MainApp{
-	private static LoginFrame mLoginFrame;
-	private static MainFrame mMainFrame;
+	private static FrameLogin mLoginFrame;
+	private static FrameMain mMainFrame;
+	private static ArrayBlockingQueue<MyHttpUrlRequest> mRequestQueue;
+	//private static ArrayBlockingQueue<MyHttpResponse> mResponseQueue;
+	private static HttpDispatcher mHttpDispatcher;
+	private static UiProcess mUiProcess;
+	private static RequestProcess mTicketProcess;
+	private static MainProcess mMainProcess;
+	private static CookieManager mCookieManager;
 	
 	public static void main(String args[ ]){
-		mLoginFrame = new LoginFrame(); 
-		mLoginFrame.setVisible(true); 
-		mLoginFrame.setOnLogInListener(new LoginFrame.OnLogInListener() {			
-			@Override
-			public void OnLogIn() {
-				mLoginFrame.setVisible(false); 
-				if(mMainFrame == null){
-					mMainFrame = new MainFrame();
-				}
-				mMainFrame.setVisible(true);
-			}
-		});
+		//mResponseQueue = new ArrayBlockingQueue<MyHttpResponse>(10);
+		mRequestQueue = new ArrayBlockingQueue<MyHttpUrlRequest>(10);	
+		mCookieManager = new CookieManager();
+		mHttpDispatcher = new HttpDispatcher(mRequestQueue,mCookieManager);
+		mHttpDispatcher.start();
+		
+		/*
+		mUiProcess = new UiProcess();
+		mUiProcess.start();
+		*/
+		mMainProcess = new MainProcess();
+		mMainProcess.init(mRequestQueue);
 	}
+	
+	public static BlockingQueue<MyHttpUrlRequest> getRequestQueue(){
+		return mRequestQueue;
+	}
+	
+	public static CookieManager getCookieManager(){
+		return mCookieManager;
+	}
+	/*
+	public static BlockingQueue<MyHttpResponse> getResponseQueue(){
+		return mResponseQueue;
+	}*/
 }
