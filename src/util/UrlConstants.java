@@ -36,6 +36,13 @@ public class UrlConstants {
 	// 鏌ヨ浣欑エ鐩稿叧ref
 	public final static String REF_TICKET_URL = "https://kyfw.12306.cn/otn/leftTicket/init";
 	
+	public static final String REQ_PASSENGERS_INIT_URL = "https://kyfw.12306.cn/otn/passengers/init";
+	public static final String REF_PASSENGERS_INIT_URL = "https://kyfw.12306.cn/otn/index/init";
+	
+	public static final String REQ_PASSENGERS_QUERY_URL = "https://kyfw.12306.cn/otn/passengers/query";
+	
+	public static final String REQ_CHECK_USER_URL = "https://kyfw.12306.cn/otn/passengers/query";
+	
 	public final static String FILE_LOGIN_CAPTCHA_URL = "captcha_login.jpg";
 	public final static String FILE_SUBMIT_CAPTCHA_URL = "captcha_submit.jpg";
 }

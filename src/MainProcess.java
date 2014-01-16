@@ -2,10 +2,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.concurrent.BlockingQueue;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.swing.ImageIcon;
 
 import util.Log;
+import util.TicketInfoConstants;
 
 import net.HttpDispatcher;
 import net.MyHttpResponse;
@@ -17,22 +20,24 @@ import net.sf.json.JSONObject;
 public class MainProcess implements UiInterface{
 	private FrameLogin mLoginFrame;
 	private FrameMain mMainFrame;
-	private RequestProcess mTicketProcess;
+	private FrameSubmitOrder mFrameSubmitOrder;
+	private RequestProcess mRequestProcess;
 	private BlockingQueue<MyHttpUrlRequest> mRequestQueue;
 	private UserInfo mUserInfo;
+	private PassengerManager mPassengerManager;
 	
 	public void init(BlockingQueue<MyHttpUrlRequest> queue){
 		mUserInfo = new UserInfo();
 		mRequestQueue = queue;
-		mTicketProcess = new RequestProcess(mRequestQueue,this,mUserInfo);
-		mTicketProcess.stepGetCookie();	
+		mRequestProcess = new RequestProcess(mRequestQueue,this,mUserInfo);
+		mRequestProcess.stepGetCookie();	
 				
 		mLoginFrame = new FrameLogin(); 
 		mLoginFrame.setVisible(true); 
 		mLoginFrame.setOnLogInListener(new FrameLogin.OnLogInListener() {			
 			@Override
 			public void OnLogIn() {
-				mTicketProcess.stepLoginAyncSuggest();
+				mRequestProcess.stepLoginAyncSuggest();
 			}
 		});
 		mLoginFrame.setUserInfo(mUserInfo);
@@ -44,75 +49,159 @@ public class MainProcess implements UiInterface{
 	}
 	
 	@Override
+	public void setSubmitCaptcha(ImageIcon icon){
+		mFrameSubmitOrder.setCaptchaIcon(icon);
+	}
+	
+	@Override
 	public void loginSuccess(){
 		mLoginFrame.setVisible(false); 
 		if(mMainFrame == null){
 			mMainFrame = new FrameMain(mUserInfo);
-			mMainFrame.setTickProcess(mTicketProcess);
+			mMainFrame.setTickProcess(mRequestProcess);
 		}
 		mMainFrame.setVisible(true);
+		
+		mPassengerManager = new PassengerManager(mRequestProcess);
+		mPassengerManager.initPassengers();
+		
+		mUserInfo.saveUserInfo();
 	}
 	
-	public static final String KEY_STATION_TRAIN_CODE = "station_train_code";
-	public static final String KEY_START_STATION_TELECODE = "start_station_telecode";
-	public static final String KEY_START_STATION_NAME = "start_station_name";
-	public static final String KEY_END_STATION_TELECODE = "end_station_telecode";
-	public static final String KEY_END_STATION_NAME = "end_station_name";
-	public static final String KEY_FROM_STATION_TELECODE = "from_station_telecode";
-	public static final String KEY_FROM_STATION_NAME = "from_station_name";
-	public static final String KEY_TO_STATION_TELECODE = "to_station_telecode";
-	public static final String KEY_TO_STATION_NAME = "to_station_name";
-	public static final String KEY_START_TIME = "start_time";
-	public static final String KEY_ARRIVE_TIME = "arrive_time";
-	public static final String KEY_DAY_DIFFERENCE = "day_difference";
-	public static final String KEY_LAST_TIME = "lishi";
-	public static final String KEY_START_TRAIN_DATE = "start_train_date";	
-	//public static final String KEY_GG_NUM = "gg_num";	
-	public static final String KEY_SWZ_NUM = "swz_num";
-	public static final String KEY_TZ_NUM = "tz_num";
-	public static final String KEY_ZY_NUM = "zy_num";
-	public static final String KEY_ZE_NUM = "ze_num";
-	public static final String KEY_GR_NUM = "gr_num";
-	public static final String KEY_RW_NUM = "rw_num";
-	public static final String KEY_YW_NUM = "yw_num";
-	public static final String KEY_RZ_NUM = "rz_num";
-	public static final String KEY_YZ_NUM = "yz_num";
-	public static final String KEY_WZ_NUM = "wz_num";
-	public static final String KEY_QT_NUM = "qt_num";
-	
-	public static final HashMap<String,String> mSeats = new HashMap<String,String>();
-	static{
-		mSeats.put("swz_num","商务座");
-		mSeats.put("tz_num","特等座");
-		mSeats.put("zy_num","一等座");
-		mSeats.put("ze_num","二等座");
-		mSeats.put("gr_num","高级软卧");
-		mSeats.put("rw_num","软卧");
-		mSeats.put("yw_num","硬卧");
-		mSeats.put("rz_num","软座");	
-		mSeats.put("yz_num","硬座");
-		mSeats.put("wz_num","无座");
-		mSeats.put("qt_num","其他");
-	}
 	
 	@Override
 	public void parseTicketQuery(String str){
 		Log.i("parseTicketQuery start");
-		JSONObject jsonObj = JSONObject.fromObject(str);
-		JSONArray trainList = jsonObj.getJSONArray("data");		
-		int count = trainList.size();		
-		for(int i=0;i<count;i++){
-			JSONObject train = trainList.getJSONObject(i).getJSONObject("queryLeftNewDTO");
-			Log.i(train.toString());
+		Log.i("parseTicketQuery,str="+str);
+		
+		JSONObject jObj = JSONObject.fromObject(str);
+		String jString = jObj.getString("data");
+		/*
+		String regEx = ".*\\[(.*)\\].*";
+		Pattern p=Pattern.compile(regEx);
+		Matcher m=p.matcher(str);
+		if(m.find()){
+			Log.i(m.group(1));
 		}
+		*/
+		JSONArray list = JSONArray.fromObject(jString);
+		int count = list.size();
+		for(int i=0;i<count;i++){
+			JSONObject jObj1 = list.getJSONObject(i);
+			JSONObject jDto = jObj1.getJSONObject("queryLeftNewDTO");
+			String jStr = jObj1.getString("secretStr");
+			Log.i("jStr="+jStr);
+		}
+		
+		JSONObject jsonObj = JSONObject.fromObject(str);		
+		JSONArray trainList = jsonObj.getJSONArray("data");		
+		JSONObject train = getBestTrain(trainList);
+		if(train != null){
+			//submitOrder(train);
+		}
+		Log.i("===================================================================");
+		Log.i("parseTicketQuery,bestTrain="+train);
 		Log.i("parseTicketQuery end");
 	}
-	/*
-	private ArrayList<JSONObject> getFilterTrainList(JSONArray srcList, HashSet ){
-		ArrayList<JSONObject> dstList = new ArrayList<JSONObject>(20);
-		HashSet seatFilter = mUserInfo.getSeatFitler();
-		HashSet trainFilter = mUserInfo.getTrainFitler();
-		return dstList;
+	
+	private void submitOrder(JSONObject train){
+		if(mFrameSubmitOrder == null){
+			mFrameSubmitOrder = new FrameSubmitOrder();
+			//mFrameSubmitOrder.setTickProcess(mRequestProcess);
+		}
+		mFrameSubmitOrder.setVisible(true);
+		
+		mRequestProcess.startSubmitOrderSequence(train);
 	}
-	*/
+
+	private JSONObject getBestTrain(JSONArray trainList){
+		JSONObject bestTrain = null;
+		int bestWeight = 0;
+		ArrayList<String> seatFilter = mUserInfo.getSeatFitler();
+		ArrayList<String> trainFilter = mUserInfo.getTrainFitler();
+		String priorityType = mUserInfo.getPriorityType();
+		int seatWeightMax = seatFilter.size();
+		int trainWeightMax = trainFilter.size();
+		int weightMax = seatWeightMax*trainWeightMax;
+		int count = trainList.size();
+		JSONObject train = null;
+		int trainWeight = 0;
+		int seatWeigth = 0;
+		int finalWeight = 0;
+				
+		for(int i=0;i<count;i++){
+			train = trainList.getJSONObject(i).getJSONObject("queryLeftNewDTO");			
+			trainWeight = getTrainWeightValue(train,trainFilter);
+			seatWeigth = getSeatWeightValue(train,seatFilter);	
+			
+			if(priorityType.equals(UserInfo.PRIORITY_TYPE_SEAT)){
+				finalWeight = (trainWeight-1)*trainWeightMax + seatWeigth;
+			}else if(priorityType.equals(UserInfo.PRIORITY_TYPE_TRAIN)){
+				finalWeight = (seatWeigth-1)*seatWeightMax + trainWeight;
+			}else{
+				finalWeight = seatWeigth*trainWeight;
+			}
+			if(trainWeight > 0){
+				Log.i("getBestTrain,train="+train.getString(TicketInfoConstants.KEY_STATION_TRAIN_CODE)
+						+",swz_num="+train.getString(TicketInfoConstants.KEY_SWZ_NUM)
+						+",tz_num="+train.getString(TicketInfoConstants.KEY_TZ_NUM)
+						+",zy_num="+train.getString(TicketInfoConstants.KEY_ZY_NUM)
+						+",ze_num="+train.getString(TicketInfoConstants.KEY_ZE_NUM));
+				Log.i("getBestTrain,trainWeight="+trainWeight+",seatWeigth="+seatWeigth);
+			}
+			if(finalWeight > bestWeight){
+				bestWeight = finalWeight;
+				bestTrain = train;
+				if(bestWeight == weightMax){
+					break;
+				}
+			}
+		}
+		return bestTrain;
+	}
+	
+	private int getTrainWeightValue(JSONObject train, ArrayList<String> trainFilter){
+		int weightValue = 0;
+		int count = trainFilter.size();
+		String trainCode = null;
+		for(int i=0,weight=count;i<count;i++,weight--){
+			trainCode = train.getString(TicketInfoConstants.KEY_STATION_TRAIN_CODE);
+			if(trainCode.equals(trainFilter.get(i))){
+				weightValue = weight;
+				break;
+			}
+		}
+		return weightValue;
+	}
+	
+	private static final int ENOUGH_SEAT_NUM = 100;
+	private int mPassengerNum = 9;
+	
+	private int getSeatWeightValue(JSONObject train, ArrayList<String> seatFilter){
+		int weightValue = 0;
+		int count = seatFilter.size();
+		String seatNum = null;
+		int num = 0;
+		for(int i=0,weight=count;i<count;i++,weight--){
+			seatNum = train.getString(seatFilter.get(i));
+			num = checkSeatNum(seatNum);
+			if(num >= mPassengerNum){
+				weightValue = weight;
+				break;
+			}
+		}
+		return weightValue;
+	}
+	
+	private int checkSeatNum(String seatNum){
+		int num = 0;
+		if(seatNum.equals("无") || seatNum.equals("--")){
+			//return num;
+		}else if(seatNum.equals("有")){
+			num = ENOUGH_SEAT_NUM;
+		}else{
+			num = Integer.valueOf(seatNum);
+		}
+		return num;
+	}
 }

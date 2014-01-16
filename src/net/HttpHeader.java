@@ -169,6 +169,22 @@ public class HttpHeader {
 		headerMap.put(USERAGENT, USERAGENT_VALUE);
 		return headerMap;
 	}
+	
+	public static Map<String, String> initPassengers() {
+		Map<String, String> headerMap = new LinkedHashMap<String, String>();
+		headerMap
+				.put(ACCEPT,
+						"application/x-shockwave-flash, image/gif, image/jpeg, image/pjpeg, application/vnd.ms-excel, application/vnd.ms-powerpoint, application/msword, application/x-ms-application, application/x-ms-xbap, application/vnd.ms-xpsdocument, application/xaml+xml, */*");
+		headerMap.put(ACCEPTENCODING, ACCEPTENCODING_VALUE);
+		headerMap.put(ACCEPTLANGUAGE, ACCEPTLANGUAGE_VALUE);
+		headerMap.put(CACHECONTROL, CACHECONTROL_VALUE);
+		headerMap.put(CONNECTION, CONNECTION_VALUE);
+		headerMap.put(CONTENTTYPE, CONTENTTYPE_VALUE);
+		headerMap.put(HOST, HOST_VALUE);
+		headerMap.put(REFERER, UrlConstants.REF_PASSENGERS_INIT_URL);
+		headerMap.put(USERAGENT, USERAGENT_VALUE);
+		return headerMap;
+	}
 
 	/**
 	 * checkorder,confirmsingle,queryOrderWaitTime,getQueueCount 共用

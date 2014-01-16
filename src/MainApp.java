@@ -26,7 +26,6 @@ public class MainApp{
 	private static ArrayBlockingQueue<MyHttpUrlRequest> mRequestQueue;
 	//private static ArrayBlockingQueue<MyHttpResponse> mResponseQueue;
 	private static HttpDispatcher mHttpDispatcher;
-	private static UiProcess mUiProcess;
 	private static RequestProcess mTicketProcess;
 	private static MainProcess mMainProcess;
 	private static CookieManager mCookieManager;

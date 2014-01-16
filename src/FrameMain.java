@@ -27,6 +27,8 @@ public class FrameMain extends JFrame{
 	private JTextField mFromStationInput;
 	private JTextField mToStationInput;
 	private JFormattedTextField mDateInput;
+	private JTextField mTrainFilterInput;
+	private JTextField mSeatFilterInput;
 	
 	public FrameMain(UserInfo userInfo){
 		mUserInfo = userInfo;
@@ -63,6 +65,7 @@ public class FrameMain extends JFrame{
 		final int CAPTCHA_WIDTH = 78;
 		final int STATION_INPUT_WIDTH = 100;
 		final int DATE_INPUT_WIDTH = 150;
+		final int FILTER_INPUT_WIDTH = 200;
 		
 		int xOffset = LEFT_PADDING; //left padding
 		int yOffset = TOP_PADDING; //top padding
@@ -108,8 +111,35 @@ public class FrameMain extends JFrame{
 		if(!TextUtil.isEmpty(mUserInfo.getDate())){
 			mDateInput.setText(mUserInfo.getDate());
 		}
-		panel.add(mDateInput);		
+		panel.add(mDateInput);	
 		
+		//train filter
+		xOffset = LEFT_PADDING; //left padding
+		yOffset += ROW_HEIGHT+10;
+		JLabel trainFilter = new JLabel();
+		trainFilter.setText("车次");
+		trainFilter.setBounds(xOffset,yOffset,LABEL_WIDTH,ROW_HEIGHT);
+		panel.add(trainFilter);
+		xOffset += LABEL_WIDTH;		
+		mTrainFilterInput = new JTextField();
+		mTrainFilterInput.setBounds(xOffset,yOffset,FILTER_INPUT_WIDTH,ROW_HEIGHT);		
+		mTrainFilterInput.setText(mUserInfo.getTrainFitler().toString());
+		panel.add(mTrainFilterInput);
+		
+		//seat filter
+		xOffset = LEFT_PADDING; // left padding
+		yOffset += ROW_HEIGHT + 10;
+		JLabel seatFilter = new JLabel();
+		seatFilter.setText("席别");
+		seatFilter.setBounds(xOffset, yOffset, LABEL_WIDTH, ROW_HEIGHT);
+		panel.add(seatFilter);
+		xOffset += LABEL_WIDTH;
+		mSeatFilterInput = new JTextField();
+		mSeatFilterInput.setBounds(xOffset, yOffset, FILTER_INPUT_WIDTH,ROW_HEIGHT);
+		mSeatFilterInput.setText(mUserInfo.getSeatFitler().toString());
+		panel.add(mSeatFilterInput);
+		
+		//qury button
 		xOffset = LEFT_PADDING; //left padding
 		yOffset += ROW_HEIGHT+10;
 		JButton qureyBtn = new JButton();
@@ -177,6 +207,8 @@ public class FrameMain extends JFrame{
 		mUserInfo.setToStationName(toStation);
 		mUserInfo.setToStationCode(toStationCode);
 		mUserInfo.setDate(date);
+		mUserInfo.setTrainFilter(mTrainFilterInput.getText());
+		mUserInfo.setSeatFilter(mSeatFilterInput.getText());
 		Log.i("checkTicketInfo,date="+date);
 		return true;
 	}

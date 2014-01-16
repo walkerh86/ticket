@@ -8,7 +8,7 @@ import util.Log;
 public class CookieManager {
 	private String mJSessionId;
 	private String mBigIpServerOtn;
-	private String mExtraCookie;
+	private String mExtraCookie="";
 	
 	public CookieManager(){
 		

@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Properties;
@@ -40,9 +41,9 @@ public class UserInfo {
 	private String mToStationCode;
 	private String mDate;
 	//filter info
-	private String mPriorityType;
-	private LinkedHashSet<String> mSeatFilter = new LinkedHashSet<String>();
-	private LinkedHashSet<String> mTrainFilter = new LinkedHashSet<String>();	
+	private String mPriorityType = PRIORITY_TYPE_NONE;
+	private ArrayList<String> mSeatFilter = new ArrayList<String>();
+	private ArrayList<String> mTrainFilter = new ArrayList<String>();	
 	//
 	private Properties mProperties = new Properties();
 	
@@ -115,8 +116,31 @@ public class UserInfo {
 		return mDate;
 	}
 	
-	public HashSet getSeatFitler(){
+	public ArrayList<String> getSeatFitler(){
 		return mSeatFilter;
+	}
+		
+	public void setSeatFilter(String filter){
+		mSeatFilter.clear();
+		String result = filter.replace("[", "").replace("]", "");
+		String[] filters = result.split(",");
+		for(int i=0;i<filters.length;i++){
+			mSeatFilter.add(filters[i].trim());
+		}
+	}
+	
+	public ArrayList<String> getTrainFitler(){
+		return mTrainFilter;
+	}
+		
+	public void setTrainFilter(String filter){
+		mTrainFilter.clear();
+		String result = filter.replace("[", "").replace("]", "");
+		String[] filters = result.split(",");
+		for(int i=0;i<filters.length;i++){
+			mTrainFilter.add(filters[i].trim());
+		}
+		Log.i(mTrainFilter.toString());
 	}
 	
 	public String getPriorityType(){
@@ -125,27 +149,6 @@ public class UserInfo {
 	
 	public void setPriorityType(String type){
 		mPriorityType = type;
-	}
-	
-	public void setSeatFilter(String filter){
-		mSeatFilter.clear();
-		String result = filter.replace("[", "").replace("]", "");
-		String[] filters = result.split(",");
-		for(int i=0;i<filters.length;i++){
-			mSeatFilter.add(filters[i]);
-		}
-	}
-	
-	public HashSet getTrainFitler(){
-		return mTrainFilter;
-	}
-	
-	public void setTrainFilter(String filter){
-		mTrainFilter.clear();
-		String[] filters = filter.split(",");
-		for(int i=0;i<filters.length;i++){
-			mTrainFilter.add(filters[i]);
-		}
 	}
 	
 	public void loadUserInfo(){
@@ -195,6 +198,9 @@ public class UserInfo {
 	}
 	
 	public void saveUserInfo(){
+		mProperties.setProperty(KEY_USER_NAME, mUserName);
+		mProperties.setProperty(KEY_USER_PW, mUserPw);
+
 		mProperties.setProperty(KEY_FROM_STATION_NAME, mFromStationName);
 		mProperties.setProperty(KEY_TO_STATION_NAME, mToStationName);
 		mProperties.setProperty(KEY_FROM_STATION_CODE, mFromStationCode);
