@@ -43,6 +43,6 @@ public class CookieManager {
 		if(mJSessionId == null || mBigIpServerOtn == null){
 			return null;
 		}
-		return "JSESSIONID=" + mJSessionId + mExtraCookie + ";BIGipServerotn=" + mBigIpServerOtn;
+		return "JSESSIONID=" + mJSessionId + mExtraCookie + "; BIGipServerotn=" + mBigIpServerOtn;
 	}
 }

@@ -1,10 +1,13 @@
 import java.awt.Color;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
 import javax.swing.ImageIcon;
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -14,8 +17,10 @@ import javax.swing.JTextField;
 public class FrameSubmitOrder extends JFrame{
 	private JLabel mCaptchaImg;
 	private JTextField mCaptchaInput;
+	private UiActionListener mUiActionListener;
 	
-	public FrameSubmitOrder(){
+	public FrameSubmitOrder(UiActionListener listener){
+		mUiActionListener = listener;
 		initFrame();
 	}
 	
@@ -27,7 +32,7 @@ public class FrameSubmitOrder extends JFrame{
         addWindowListener(new WindowAdapter(){
         	public void windowClosing(WindowEvent e) { 
                 //System.out.println("Exit when Closed event"); 
-                System.exit(0);
+                //System.exit(0);
             }
         });
         
@@ -74,9 +79,26 @@ public class FrameSubmitOrder extends JFrame{
 		mCaptchaImg.setBackground(Color.CYAN);
 		mCaptchaImg.setIcon(new ImageIcon("captcha.png"));
 		panel.add(mCaptchaImg);
+		
+		xOffset = LEFT_PADDING; //left padding
+		yOffset += ROW_HEIGHT+10;
+		JButton submitBtn = new JButton("Ã·Ωª∂©µ•");
+		submitBtn.setBounds(xOffset, yOffset, LABEL_WIDTH, ROW_HEIGHT);
+		submitBtn.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent evt) {
+				//if(checkUserInfo()){
+					mUiActionListener.onUiAction(UiActionListener.UI_ACTION_TICKET_SUBMIT);
+				//}
+			}
+		});
+		panel.add(submitBtn);
 	}
-	
+		
 	public void setCaptchaIcon(ImageIcon icon){
 		mCaptchaImg.setIcon(icon);
+	}
+	
+	public String getCaptchaCode(){
+		return mCaptchaInput.getText();
 	}
 }

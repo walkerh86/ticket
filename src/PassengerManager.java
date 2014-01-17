@@ -25,7 +25,10 @@ import net.sf.json.JSONObject;
 public class PassengerManager  implements HttpResponseHandler{
 	private static final String KEY_PASSENGER_NAME = "passenger_name";
 	private static final String KEY_PASSENGER_IDNO = "passenger_id_no";
-	private static final String KEY_PASSENGER_TYPE = "passenger_type";
+	private static final String KEY_PASSENGER_TYPE_NAME = "passenger_type_name";
+	private static final String KEY_PASSENGER_ID_TYPE_NAME = "passenger_type_name";
+	private static final String KEY_PASSENGER_TYPE_CODE = "passenger_type";
+	private static final String KEY_PASSENGER_ID_TYPE_CODE = "passenger_id_type_code";
 	
 	private Object mLock = new Object();
 	private RequestProcess mRequestProcess;
@@ -41,7 +44,12 @@ public class PassengerManager  implements HttpResponseHandler{
 	}
 	
 	public void initPassengers(){
-		mRequestProcess.initPassengersRequest(this);
+		//mRequestProcess.initPassengersRequest(this);
+		//test
+		Passenger passenger = new Passenger();
+		passenger.setName("ºú¼Ì»ª");
+		passenger.setIdNo("413028195612085729");
+		mSelectedPassengers.add(passenger);
 	}
 	
 	@Override
@@ -112,11 +120,14 @@ public class PassengerManager  implements HttpResponseHandler{
 		int count = passengerList.size();
 		for(int i=0;i<count;i++){
 			JSONObject jPassenger = passengerList.getJSONObject(i);
-			//Log.i(jPassenger.toString());
+			Log.i(jPassenger.toString());
 			Passenger passenger = new Passenger();
-			passenger.mName = jPassenger.getString(KEY_PASSENGER_NAME);
-			passenger.mIdNo = jPassenger.getString(KEY_PASSENGER_IDNO);
-			passenger.mType = jPassenger.getString(KEY_PASSENGER_TYPE);
+			passenger.setName(jPassenger.getString(KEY_PASSENGER_NAME));
+			passenger.setIdNo(jPassenger.getString(KEY_PASSENGER_IDNO));
+			//passenger.mTypeName = jPassenger.getString(KEY_PASSENGER_TYPE_NAME);
+			passenger.setTypeCode(jPassenger.getString(KEY_PASSENGER_TYPE_CODE));
+			//passenger.mIdTypeName = jPassenger.getString(KEY_PASSENGER_ID_TYPE_NAME);
+			passenger.setIdTypeCode(jPassenger.getString(KEY_PASSENGER_ID_TYPE_CODE));
 			mRemotePassengers.add(passenger);
 		}
 	}
@@ -139,15 +150,9 @@ public class PassengerManager  implements HttpResponseHandler{
 			Log.i("passenger, name="+passenger.mName+",idno="+passenger.mIdNo);
 		}
 		*/
-	}
+	}	
 	
-	public class Passenger{
-		public String mName;
-		public String mIdNo;
-		public String mType;
-		
-		public String toString(){
-			return mName+"|"+mIdNo+"|"+mType;
-		}
+	public ArrayList<Passenger> getSelectedPassengers(){
+		return mSelectedPassengers;
 	}
 }

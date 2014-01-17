@@ -23,6 +23,7 @@ import util.TextUtil;
 public class FrameMain extends JFrame{
 	private UserInfo mUserInfo;
 	private RequestProcess mTicketProcess;
+	private UiActionListener mUiActionListener;
 	
 	private JTextField mFromStationInput;
 	private JTextField mToStationInput;
@@ -30,8 +31,9 @@ public class FrameMain extends JFrame{
 	private JTextField mTrainFilterInput;
 	private JTextField mSeatFilterInput;
 	
-	public FrameMain(UserInfo userInfo){
+	public FrameMain(UserInfo userInfo, UiActionListener listener){
 		mUserInfo = userInfo;
+		mUiActionListener = listener;
 		initFrame();
 	}
 	
@@ -147,8 +149,7 @@ public class FrameMain extends JFrame{
 		qureyBtn.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent evt) {
 				if(checkUserInfo()){
-					//stepQueryLeft();
-					mTicketProcess.stepQueryLeft();
+					mUiActionListener.onUiAction(UiActionListener.UI_ACTION_TICKET_AUTO_QUERY);
 				}
 			}
 		});

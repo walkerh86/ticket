@@ -17,47 +17,47 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 
-public class MainProcess implements UiInterface{
+public class MainProcess implements UiInterface, UiActionListener{
 	private FrameLogin mLoginFrame;
 	private FrameMain mMainFrame;
-	private FrameSubmitOrder mFrameSubmitOrder;
 	private RequestProcess mRequestProcess;
 	private BlockingQueue<MyHttpUrlRequest> mRequestQueue;
 	private UserInfo mUserInfo;
 	private PassengerManager mPassengerManager;
 	
 	public void init(BlockingQueue<MyHttpUrlRequest> queue){
-		mUserInfo = new UserInfo();
+		mUserInfo = new UserInfo();						
+		mLoginFrame = new FrameLogin(this); 
+		mLoginFrame.setVisible(true); 
+		mLoginFrame.setUserInfo(mUserInfo);
+		
 		mRequestQueue = queue;
 		mRequestProcess = new RequestProcess(mRequestQueue,this,mUserInfo);
 		mRequestProcess.stepGetCookie();	
-				
-		mLoginFrame = new FrameLogin(); 
-		mLoginFrame.setVisible(true); 
-		mLoginFrame.setOnLogInListener(new FrameLogin.OnLogInListener() {			
-			@Override
-			public void OnLogIn() {
+	}
+	
+	@Override
+	public void onUiAction(int action){
+		switch(action){
+			case UiActionListener.UI_ACTION_TICKET_AUTO_QUERY:
+				mRequestProcess.stepQueryLeft();
+				break;
+			case UiActionListener.UI_ACTION_USER_LOGIN:
 				mRequestProcess.stepLoginAyncSuggest();
-			}
-		});
-		mLoginFrame.setUserInfo(mUserInfo);
+				break;
+		}
 	}
 	
 	@Override
 	public void setLoginCaptcha(ImageIcon icon){
 		mLoginFrame.setCaptchaIcon(icon);
 	}
-	
-	@Override
-	public void setSubmitCaptcha(ImageIcon icon){
-		mFrameSubmitOrder.setCaptchaIcon(icon);
-	}
-	
+		
 	@Override
 	public void loginSuccess(){
 		mLoginFrame.setVisible(false); 
 		if(mMainFrame == null){
-			mMainFrame = new FrameMain(mUserInfo);
+			mMainFrame = new FrameMain(mUserInfo,this);
 			mMainFrame.setTickProcess(mRequestProcess);
 		}
 		mMainFrame.setVisible(true);
@@ -76,46 +76,31 @@ public class MainProcess implements UiInterface{
 		
 		JSONObject jObj = JSONObject.fromObject(str);
 		String jString = jObj.getString("data");
-		/*
-		String regEx = ".*\\[(.*)\\].*";
-		Pattern p=Pattern.compile(regEx);
-		Matcher m=p.matcher(str);
-		if(m.find()){
-			Log.i(m.group(1));
-		}
-		*/
-		JSONArray list = JSONArray.fromObject(jString);
-		int count = list.size();
-		for(int i=0;i<count;i++){
-			JSONObject jObj1 = list.getJSONObject(i);
-			JSONObject jDto = jObj1.getJSONObject("queryLeftNewDTO");
-			String jStr = jObj1.getString("secretStr");
-			Log.i("jStr="+jStr);
-		}
 		
-		JSONObject jsonObj = JSONObject.fromObject(str);		
-		JSONArray trainList = jsonObj.getJSONArray("data");		
+		JSONArray trainList = JSONArray.fromObject(jString);//jsonObj.getJSONArray("data");		
 		JSONObject train = getBestTrain(trainList);
-		if(train != null){
-			//submitOrder(train);
+		if(train != null && mBestSeatType != null){
+			TicketInfo tickInfo = TicketInfo.getTicketInfoFromJSONObject(train);
+			tickInfo.setSeatType(mBestSeatType);
+			Log.i("parseTicketQuery,ticketInfo="+tickInfo.toString());
+			submitOrder(tickInfo);
 		}
 		Log.i("===================================================================");
 		Log.i("parseTicketQuery,bestTrain="+train);
 		Log.i("parseTicketQuery end");
 	}
 	
-	private void submitOrder(JSONObject train){
-		if(mFrameSubmitOrder == null){
-			mFrameSubmitOrder = new FrameSubmitOrder();
-			//mFrameSubmitOrder.setTickProcess(mRequestProcess);
-		}
-		mFrameSubmitOrder.setVisible(true);
-		
-		mRequestProcess.startSubmitOrderSequence(train);
+	private ProcessSubmitOrder mProcessSubmitOrder;
+	private void submitOrder(TicketInfo tickInfo){
+		mPassengerNum = mPassengerManager.getSelectedPassengers().size();
+		mProcessSubmitOrder = new ProcessSubmitOrder(this,mRequestQueue,mUserInfo,mPassengerManager);
+		mProcessSubmitOrder.startSubmitOrderSequence(tickInfo);
 	}
 
+	private String mBestSeatType = null;
 	private JSONObject getBestTrain(JSONArray trainList){
 		JSONObject bestTrain = null;
+		String bestSeatType = null;
 		int bestWeight = 0;
 		ArrayList<String> seatFilter = mUserInfo.getSeatFitler();
 		ArrayList<String> trainFilter = mUserInfo.getTrainFitler();
@@ -126,20 +111,20 @@ public class MainProcess implements UiInterface{
 		int count = trainList.size();
 		JSONObject train = null;
 		int trainWeight = 0;
-		int seatWeigth = 0;
+		int seatWeight = 0;
 		int finalWeight = 0;
 				
 		for(int i=0;i<count;i++){
 			train = trainList.getJSONObject(i).getJSONObject("queryLeftNewDTO");			
 			trainWeight = getTrainWeightValue(train,trainFilter);
-			seatWeigth = getSeatWeightValue(train,seatFilter);	
+			seatWeight = getSeatWeightValue(train,seatFilter);	
 			
 			if(priorityType.equals(UserInfo.PRIORITY_TYPE_SEAT)){
-				finalWeight = (trainWeight-1)*trainWeightMax + seatWeigth;
+				finalWeight = (trainWeight-1)*trainWeightMax + seatWeight;
 			}else if(priorityType.equals(UserInfo.PRIORITY_TYPE_TRAIN)){
-				finalWeight = (seatWeigth-1)*seatWeightMax + trainWeight;
+				finalWeight = (seatWeight-1)*seatWeightMax + trainWeight;
 			}else{
-				finalWeight = seatWeigth*trainWeight;
+				finalWeight = seatWeight*trainWeight;
 			}
 			if(trainWeight > 0){
 				Log.i("getBestTrain,train="+train.getString(TicketInfoConstants.KEY_STATION_TRAIN_CODE)
@@ -147,16 +132,20 @@ public class MainProcess implements UiInterface{
 						+",tz_num="+train.getString(TicketInfoConstants.KEY_TZ_NUM)
 						+",zy_num="+train.getString(TicketInfoConstants.KEY_ZY_NUM)
 						+",ze_num="+train.getString(TicketInfoConstants.KEY_ZE_NUM));
-				Log.i("getBestTrain,trainWeight="+trainWeight+",seatWeigth="+seatWeigth);
+				Log.i("getBestTrain,trainWeight="+trainWeight+",seatWeight="+seatWeight);
 			}
 			if(finalWeight > bestWeight){
 				bestWeight = finalWeight;
-				bestTrain = train;
+				bestTrain = trainList.getJSONObject(i);//train;
+				bestSeatType = getSeatTypeByWeight(seatWeight,seatFilter);
+				Log.i("bestSeatType="+bestSeatType);
 				if(bestWeight == weightMax){
 					break;
 				}
 			}
 		}
+		
+		mBestSeatType = bestSeatType;
 		return bestTrain;
 	}
 	
@@ -191,6 +180,16 @@ public class MainProcess implements UiInterface{
 			}
 		}
 		return weightValue;
+	}
+		
+	private String getSeatTypeByWeight(int weight, ArrayList<String> seatFilter){
+		String seatType = null;
+		int count = seatFilter.size();
+		int index = count-weight;
+		if(index >=0 && index < count){
+			seatType = seatFilter.get(index);
+		}
+		return seatType;
 	}
 	
 	private int checkSeatNum(String seatNum){

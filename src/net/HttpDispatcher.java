@@ -100,8 +100,10 @@ public class HttpDispatcher extends Thread{
 						if(content.length() > 0){
 							content += "&";
 						}
-						content += URLEncoder.encode(entry.getKey(), "UTF-8") + "="
-					              + URLEncoder.encode(entry.getValue(), "UTF-8");
+						//content += URLEncoder.encode(entry.getKey(), "UTF-8") + "="
+					    //          + URLEncoder.encode(entry.getValue(), "UTF-8");
+						content += entry.getKey() + "="
+					              + entry.getValue();
 					}
 					Log.i("httpDispatcher param:\n"+content);
 					byte[] bypes = content.getBytes();

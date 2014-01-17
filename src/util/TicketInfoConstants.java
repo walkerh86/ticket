@@ -3,6 +3,7 @@ package util;
 import java.util.HashMap;
 
 public class TicketInfoConstants {
+	public static final String KEY_TRAIN_NO = "train_no";
 	public static final String KEY_STATION_TRAIN_CODE = "station_train_code";
 	public static final String KEY_START_STATION_TELECODE = "start_station_telecode";
 	public static final String KEY_START_STATION_NAME = "start_station_name";
@@ -16,7 +17,9 @@ public class TicketInfoConstants {
 	public static final String KEY_ARRIVE_TIME = "arrive_time";
 	public static final String KEY_DAY_DIFFERENCE = "day_difference";
 	public static final String KEY_LAST_TIME = "lishi";
+	public static final String KEY_YP_INFO = "yp_info";
 	public static final String KEY_START_TRAIN_DATE = "start_train_date";	
+	public static final String KEY_LOCATION_CODE = "location_code";	
 	public static final String KEY_SECRET_STR = "secretStr";	
 	//public static final String KEY_GG_NUM = "gg_num";	
 	public static final String KEY_SWZ_NUM = "swz_num";

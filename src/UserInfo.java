@@ -40,6 +40,7 @@ public class UserInfo {
 	private String mFromStationCode;
 	private String mToStationCode;
 	private String mDate;
+	private String mSeatTypeCode;
 	//filter info
 	private String mPriorityType = PRIORITY_TYPE_NONE;
 	private ArrayList<String> mSeatFilter = new ArrayList<String>();
@@ -114,6 +115,14 @@ public class UserInfo {
 	
 	public String getDate(){
 		return mDate;
+	}
+	
+	public void setSeatTypeCode(String seatTypeCode){
+		mSeatTypeCode = seatTypeCode;
+	}
+	
+	public String getSeatTypeCode(){
+		return mSeatTypeCode;
 	}
 	
 	public ArrayList<String> getSeatFitler(){

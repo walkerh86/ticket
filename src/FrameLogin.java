@@ -58,14 +58,16 @@ public class FrameLogin extends JFrame{
 	private JTextField mUserNameInput;
 	private JPasswordField mUserPwInput;
 	private JLabel mResponse;
-	private OnLogInListener mOnLogInListener;
+	
+	private UiActionListener mUiActionListener;
 	
 	private static final String HOST_URL = "kyfw.12306.cn";
 	private static final String COOKIE_URL = "https://kyfw.12306.cn/otn/";
 	private BlockingQueue<MyHttpUrlRequest> mRequestQueue;
 	private UserInfo mUserInfo;
 	
-	public FrameLogin(){
+	public FrameLogin(UiActionListener listener){
+		mUiActionListener = listener;
 		initFrame();
 	}
 	
@@ -171,8 +173,8 @@ public class FrameLogin extends JFrame{
 		loginBtn.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent evt) {
 				if(checkUserInput()){
-					if(mOnLogInListener != null){
-						mOnLogInListener.OnLogIn();
+					if(mUiActionListener != null){
+						mUiActionListener.onUiAction(UiActionListener.UI_ACTION_USER_LOGIN);
 					}
 				}
 			}
@@ -217,10 +219,6 @@ public class FrameLogin extends JFrame{
 	
 	public void setResponseResult(String result){
 		mResponse.setText(result);
-	}
-	
-	public void setOnLogInListener(OnLogInListener listener){
-		mOnLogInListener = listener;
 	}
 	
 	public interface OnLogInListener{

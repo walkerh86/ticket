@@ -41,7 +41,7 @@ public class UrlConstants {
 	
 	public static final String REQ_PASSENGERS_QUERY_URL = "https://kyfw.12306.cn/otn/passengers/query";
 	
-	public static final String REQ_CHECK_USER_URL = "https://kyfw.12306.cn/otn/passengers/query";
+	public static final String REQ_CHECK_USER_URL = "https://kyfw.12306.cn/otn/login/checkUser";
 	
 	public final static String FILE_LOGIN_CAPTCHA_URL = "captcha_login.jpg";
 	public final static String FILE_SUBMIT_CAPTCHA_URL = "captcha_submit.jpg";
