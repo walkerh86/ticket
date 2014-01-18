@@ -26,7 +26,6 @@ public class MainApp{
 	private static ArrayBlockingQueue<MyHttpUrlRequest> mRequestQueue;
 	//private static ArrayBlockingQueue<MyHttpResponse> mResponseQueue;
 	private static HttpDispatcher mHttpDispatcher;
-	private static RequestProcess mTicketProcess;
 	private static MainProcess mMainProcess;
 	private static CookieManager mCookieManager;
 	
@@ -36,11 +35,7 @@ public class MainApp{
 		mCookieManager = new CookieManager();
 		mHttpDispatcher = new HttpDispatcher(mRequestQueue,mCookieManager);
 		mHttpDispatcher.start();
-		
-		/*
-		mUiProcess = new UiProcess();
-		mUiProcess.start();
-		*/
+				
 		mMainProcess = new MainProcess();
 		mMainProcess.init(mRequestQueue);
 	}

@@ -1,5 +1,7 @@
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.concurrent.BlockingQueue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -15,8 +17,11 @@ import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
 import util.Log;
+import util.UrlConstants;
+import net.HttpHeader;
 import net.HttpResponseHandler;
 import net.MyHttpResponse;
+import net.MyHttpUrlRequest;
 import net.StringHttpResponse;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
@@ -30,8 +35,10 @@ public class PassengerManager  implements HttpResponseHandler{
 	private static final String KEY_PASSENGER_TYPE_CODE = "passenger_type";
 	private static final String KEY_PASSENGER_ID_TYPE_CODE = "passenger_id_type_code";
 	
+	public static final int STEP_INIT_PASSENGERS = 20;
+	public static final int STEP_QUERY_PASSENGERS = 21;
+	
 	private Object mLock = new Object();
-	private RequestProcess mRequestProcess;
 	private ArrayList<Passenger> mRemotePassengers = new ArrayList<Passenger>(20);
 	private ArrayList<Passenger> mLocalPassengers = new ArrayList<Passenger>(20);
 	private ArrayList<Passenger> mSelectedPassengers = new ArrayList<Passenger>(20);
@@ -39,8 +46,10 @@ public class PassengerManager  implements HttpResponseHandler{
 	private int mPageSize;
 	private int mCurrQueryPageIdx;
 	
-	public PassengerManager(RequestProcess process){
-		mRequestProcess = process;
+	private BlockingQueue<MyHttpUrlRequest> mRequestQueue;
+	
+	public PassengerManager(BlockingQueue<MyHttpUrlRequest> queue){
+		mRequestQueue = queue;
 	}
 	
 	public void initPassengers(){
@@ -52,15 +61,30 @@ public class PassengerManager  implements HttpResponseHandler{
 		mSelectedPassengers.add(passenger);
 	}
 	
+	public void initPassengersRequest(HttpResponseHandler handler){
+		mRequestQueue.add(new MyHttpUrlRequest(UrlConstants.REQ_PASSENGERS_INIT_URL,"GET",
+				HttpHeader.initPassengers(),null,
+				new StringHttpResponse(handler,STEP_INIT_PASSENGERS)));
+	}
+	
+	public void queryPassengersRequest(HttpResponseHandler handler, int pageIdex, int pageSize){
+		LinkedHashMap<String, String> params = new LinkedHashMap<String, String>();
+		params.put("pageIndex",Integer.toString(pageIdex));
+		params.put("pageSize",Integer.toString(pageSize));
+		mRequestQueue.add(new MyHttpUrlRequest(UrlConstants.REQ_PASSENGERS_QUERY_URL,"POST",
+				HttpHeader.initPassengers(),params,
+				new StringHttpResponse(handler,STEP_QUERY_PASSENGERS)));
+	}
+	
 	@Override
 	public void handleResponse(MyHttpResponse<?> response){
 		synchronized(mLock){	
-			if(response.mStep == RequestProcess.STEP_INIT_PASSENGERS){
+			if(response.mStep == STEP_INIT_PASSENGERS){
 				if(response.mResponseCode == 200){
 					StringHttpResponse strResponse = (StringHttpResponse)response;
 					parseInitResponse(strResponse.mResult);
 				}
-			}else if(response.mStep == RequestProcess.STEP_QUERY_PASSENGERS){
+			}else if(response.mStep == STEP_QUERY_PASSENGERS){
 				if(response.mResponseCode == 200){
 					StringHttpResponse strResponse = (StringHttpResponse)response;
 					//parsePassengerFromHtml(strResponse.mResult);
@@ -69,7 +93,7 @@ public class PassengerManager  implements HttpResponseHandler{
 						finishQueryPassengers();
 					}else{
 						mCurrQueryPageIdx++;
-						mRequestProcess.queryPassengersRequest(this,mCurrQueryPageIdx,mPageSize);
+						queryPassengersRequest(this,mCurrQueryPageIdx,mPageSize);
 					}
 				}
 			}
@@ -97,7 +121,7 @@ public class PassengerManager  implements HttpResponseHandler{
 		
 		if(mTotalPage > 1){
 			mCurrQueryPageIdx = 2;
-			mRequestProcess.queryPassengersRequest(this,mCurrQueryPageIdx,mPageSize);
+			queryPassengersRequest(this,mCurrQueryPageIdx,mPageSize);
 		}else{
 			finishQueryPassengers();
 		}

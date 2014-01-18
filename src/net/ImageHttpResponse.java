@@ -1,5 +1,6 @@
 package net;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -21,6 +22,23 @@ public class ImageHttpResponse extends MyHttpResponse<ImageIcon>{
 	
 	@Override
 	protected ImageIcon parseContent(InputStream is){
+		byte[] imgData = null;
+		try{
+			ByteArrayOutputStream out = new ByteArrayOutputStream();
+			int byteread = 0;
+			byte[] tmp = new byte[1024];
+			while ((byteread = is.read(tmp)) != -1) {
+				out.write(tmp,0,byteread);
+			}
+			imgData = out.toByteArray();
+		}catch(FileNotFoundException e){
+			Log.i("ImageResponse e="+e+"]n");
+		}catch(IOException e){
+			Log.i("ImageResponse e="+e+"]n");
+		}
+		
+		return new ImageIcon(imgData);
+		/*
 		try{
 			File imgFile = new File(mImageUrl);
 			OutputStream out = new FileOutputStream(imgFile);
@@ -36,5 +54,6 @@ public class ImageHttpResponse extends MyHttpResponse<ImageIcon>{
 		}
 		
 		return new ImageIcon(mImageUrl);
+		*/
 	}
 }

@@ -132,7 +132,7 @@ public class UserInfo {
 	public void setSeatFilter(String filter){
 		mSeatFilter.clear();
 		String result = filter.replace("[", "").replace("]", "");
-		String[] filters = result.split(",");
+		String[] filters = result.split("[,]");
 		for(int i=0;i<filters.length;i++){
 			mSeatFilter.add(filters[i].trim());
 		}
@@ -145,7 +145,7 @@ public class UserInfo {
 	public void setTrainFilter(String filter){
 		mTrainFilter.clear();
 		String result = filter.replace("[", "").replace("]", "");
-		String[] filters = result.split(",");
+		String[] filters = result.split("[,]");
 		for(int i=0;i<filters.length;i++){
 			mTrainFilter.add(filters[i].trim());
 		}

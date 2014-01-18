@@ -11,23 +11,27 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
 
 public class FrameSubmitOrder extends JFrame{
-	private JLabel mCaptchaImg;
+	private JButton mCaptchaImg;
 	private JTextField mCaptchaInput;
 	private UiActionListener mUiActionListener;
+	private TicketInfo mSubmitTicketInfo;
+	private JTextArea mLogLabel;
 	
-	public FrameSubmitOrder(UiActionListener listener){
+	public FrameSubmitOrder(UiActionListener listener, TicketInfo ticketInfo){
 		mUiActionListener = listener;
+		mSubmitTicketInfo = ticketInfo;
 		initFrame();
 	}
 	
 	private void initFrame(){
 		setTitle("提交订单");
-		setResizable(true);
-        setSize(600, 600); 
+		setResizable(false);
+        setSize(400, 300); 
         setLocationRelativeTo(null); //center in window
         addWindowListener(new WindowAdapter(){
         	public void windowClosing(WindowEvent e) { 
@@ -52,10 +56,26 @@ public class FrameSubmitOrder extends JFrame{
 		final int LABEL_WIDTH = 60;
 		final int INPUT_WIDTH = 200;
 		final int CAPTCHA_WIDTH = 78;
+		final int ARROW_WIDTH = 200;
 		
 		int xOffset = LEFT_PADDING; //left padding
 		int yOffset = TOP_PADDING; //top padding
 		
+		JLabel fromStationName = new JLabel(mSubmitTicketInfo.mFromStationName);
+		fromStationName.setBounds(xOffset, yOffset, LABEL_WIDTH, ROW_HEIGHT);		
+		panel.add(fromStationName);	
+		xOffset += LABEL_WIDTH;
+		JLabel arrow = new JLabel("----  "+mSubmitTicketInfo.mStationTrainCode
+				+", "+mSubmitTicketInfo.mSeatTypeName+"  --->");
+		arrow.setBounds(xOffset, yOffset, ARROW_WIDTH, ROW_HEIGHT);		
+		panel.add(arrow);	
+		xOffset += ARROW_WIDTH;
+		JLabel toStationName = new JLabel(mSubmitTicketInfo.mToStationName);
+		toStationName.setBounds(xOffset, yOffset, LABEL_WIDTH, ROW_HEIGHT);		
+		panel.add(toStationName);	
+		
+		xOffset = LEFT_PADDING; //left padding
+		yOffset += ROW_HEIGHT+ROW_GAP;		
 		JLabel captcha = new JLabel();
 		captcha.setText("验证码：");
 		captcha.setBounds(xOffset, yOffset, LABEL_WIDTH, ROW_HEIGHT);		
@@ -65,8 +85,12 @@ public class FrameSubmitOrder extends JFrame{
 		mCaptchaInput = new JTextField();
 		mCaptchaInput.setBounds(xOffset, yOffset, INPUT_WIDTH, ROW_HEIGHT);
 		mCaptchaInput.addKeyListener(new KeyAdapter(){
-			public void keyTyped(final KeyEvent e) {
-				if (mCaptchaInput.getText().length() >= 4) {
+			public void keyTyped(final KeyEvent e) {				
+				int len = mCaptchaInput.getText().length();
+				if(len >= 4){
+					if (e.getKeyChar() == KeyEvent.VK_ENTER) { 
+						mUiActionListener.onUiAction(UiActionListener.UI_ACTION_TICKET_SUBMIT);
+					}
 					e.consume(); // 销毁本次输入的字符
 				}
 			}
@@ -74,24 +98,34 @@ public class FrameSubmitOrder extends JFrame{
 		panel.add(mCaptchaInput);
 		xOffset += INPUT_WIDTH+COL_GAP;
 		
-		mCaptchaImg = new JLabel();
+		mCaptchaImg = new JButton();
 		mCaptchaImg.setBounds(xOffset, yOffset, CAPTCHA_WIDTH, ROW_HEIGHT);
-		mCaptchaImg.setBackground(Color.CYAN);
+		mCaptchaImg.setBackground(Color.GRAY);
 		mCaptchaImg.setIcon(new ImageIcon("captcha.png"));
+		mCaptchaImg.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent evt) {
+				mUiActionListener.onUiAction(UiActionListener.UI_ACTION_UPDATE_CAPTCHA);
+			}
+		});
 		panel.add(mCaptchaImg);
 		
 		xOffset = LEFT_PADDING; //left padding
 		yOffset += ROW_HEIGHT+10;
 		JButton submitBtn = new JButton("提交订单");
-		submitBtn.setBounds(xOffset, yOffset, LABEL_WIDTH, ROW_HEIGHT);
+		submitBtn.setBounds(xOffset, yOffset, 100, ROW_HEIGHT);
 		submitBtn.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent evt) {
-				//if(checkUserInfo()){
-					mUiActionListener.onUiAction(UiActionListener.UI_ACTION_TICKET_SUBMIT);
-				//}
+				mUiActionListener.onUiAction(UiActionListener.UI_ACTION_TICKET_SUBMIT);
 			}
 		});
 		panel.add(submitBtn);
+		
+		//row 5
+		xOffset = LEFT_PADDING; // left padding
+		yOffset += ROW_HEIGHT + ROW_GAP;
+		mLogLabel = new JTextArea();
+		mLogLabel.setBounds(xOffset, yOffset, 300, ROW_HEIGHT * 2);
+		panel.add(mLogLabel);
 	}
 		
 	public void setCaptchaIcon(ImageIcon icon){
@@ -100,5 +134,13 @@ public class FrameSubmitOrder extends JFrame{
 	
 	public String getCaptchaCode(){
 		return mCaptchaInput.getText();
+	}
+	
+	public void showLog(String... messages){
+		String msg = new String();
+		for (String message : messages) {
+			msg += message+"\n";
+		}
+		mLogLabel.setText(msg);
 	}
 }

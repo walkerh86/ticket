@@ -16,31 +16,33 @@ public class TicketInfo {
 	public String mFromStationTelecode;
 	public String mToStationTelecode;
 	public String mLocationCode;
-	public String mYpInfo;	
+	public String mYpInfo;		
+	//from JSONObject
 	public String mSecretStr;
 	//from convert
 	public String mSeatTypeCode;
-	
+	public String mSeatTypeName;
+	/*
 	public static final HashMap<String,String> mSeatCodeMap = new HashMap<String,String>();
 	static{
 		mSeatCodeMap.put("swz_num","9");
-		mSeatCodeMap.put("tz_num","8");
-		mSeatCodeMap.put("zy_num","7");
-		mSeatCodeMap.put("ze_num","6");
+		mSeatCodeMap.put("tz_num","P");
+		mSeatCodeMap.put("zy_num","M");
+		mSeatCodeMap.put("ze_num","O");
 		mSeatCodeMap.put("gr_num","5");
 		mSeatCodeMap.put("rw_num","4");
 		mSeatCodeMap.put("yw_num","3");
 		mSeatCodeMap.put("rz_num","2");	
 		mSeatCodeMap.put("yz_num","1");
-		mSeatCodeMap.put("wz_num","WZ");
+		mSeatCodeMap.put("wz_num","1");
 		mSeatCodeMap.put("qt_num","ÆäËû");
 	}
-	
+	*/
 	public static TicketInfo getTicketInfoFromJSONObject(JSONObject jObj){
 		TicketInfo ticketInfo = new TicketInfo();
 		ticketInfo.mSecretStr = jObj.getString(TicketInfoConstants.KEY_SECRET_STR);
-		Log.i("getTicketInfoFromJSONObject,mSecretStr=");
-		Log.i(ticketInfo.mSecretStr);
+		//Log.i("getTicketInfoFromJSONObject,mSecretStr=");
+		//Log.i(ticketInfo.mSecretStr);
 		try{
 		Log.i(URLEncoder.encode(ticketInfo.mSecretStr, "UTF-8"));
 		}catch( UnsupportedEncodingException e){
@@ -59,8 +61,9 @@ public class TicketInfo {
 	}
 	
 	public void setSeatType(String type){
-		mSeatTypeCode = mSeatCodeMap.get(type);
-		Log.i("setSeatType,type="+type+",mSeatTypeCode="+mSeatTypeCode);
+		mSeatTypeName = SeatInfo.getSeatName(type);
+		mSeatTypeCode = SeatInfo.getSeatCode(type);//mSeatCodeMap.get(type);
+		Log.i("setSeatType,type="+type+",mSeatTypeCode="+mSeatTypeCode+",name="+mSeatTypeName);
 	}
 	
 	public String toString(){

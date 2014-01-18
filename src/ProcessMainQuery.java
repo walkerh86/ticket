@@ -1,57 +1,84 @@
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.concurrent.BlockingQueue;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import javax.swing.ImageIcon;
 
 import util.Log;
 import util.TicketInfoConstants;
-
-import net.HttpDispatcher;
+import util.UrlConstants;
+import net.CookieManager;
+import net.HttpHeader;
+import net.HttpResponseHandler;
+import net.ImageHttpResponse;
 import net.MyHttpResponse;
 import net.MyHttpUrlRequest;
+import net.StringHttpResponse;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 
-public class MainProcess implements UiInterface{
-	private FrameLogin mLoginFrame;
-	private FrameMain mMainFrame;
+public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
+	public static final int STEP_QUERY_LEFT = 6;
+	
+	private Object mLock = new Object();
+	private UiInterface mCallBack;
 	private BlockingQueue<MyHttpUrlRequest> mRequestQueue;
 	private UserInfo mUserInfo;
 	private PassengerManager mPassengerManager;
 	
-	private ProcessLogin mProcessLogin;
-	private ProcessMainQuery mProcessMainQuery;
+	private FrameMain mFrameMain;
 	
-	public void init(BlockingQueue<MyHttpUrlRequest> queue){
-		mUserInfo = new UserInfo();	
-		
+	private boolean mQueryStart = false;
+	
+	public ProcessMainQuery(UiInterface cb, BlockingQueue<MyHttpUrlRequest> queue, 
+			UserInfo userInfo, PassengerManager passengerManager){	
+		mCallBack = cb;
 		mRequestQueue = queue;
-		//mRequestProcess.stepGetCookie();	
+		mUserInfo = userInfo;
+		mPassengerManager = passengerManager;
 		
-		mProcessLogin = new ProcessLogin(this,mRequestQueue,mUserInfo);
-		//FrameMain frame = new FrameMain(mUserInfo,null);
-		//frame.setVisible(true);
-	}
-			
-	@Override
-	public void loginSuccess(){
-		mProcessLogin.setUiVisible(false);		
-				
-		mPassengerManager = new PassengerManager(mRequestQueue);
-		mPassengerManager.initPassengers();
-		
-		mProcessMainQuery = new ProcessMainQuery(this,mRequestQueue,mUserInfo,mPassengerManager);
-		
-		mUserInfo.saveUserInfo();
+		initUi();
 	}
 	
+	private void initUi(){
+		mFrameMain = new FrameMain(mUserInfo,this);
+		mFrameMain.setVisible(true);
+	}
 	
 	@Override
+	public void onUiAction(int action){
+		if(action == UiActionListener.UI_ACTION_TICKET_AUTO_QUERY_START){
+			if(!mQueryStart){
+				mQueryStart = true;
+				stepQueryLeft();
+			}
+		}else if(action == UI_ACTION_TICKET_AUTO_QUERY_END){
+			mQueryStart = false;
+		}
+	}
+	
+	public void stepQueryLeft(){
+		LinkedHashMap<String, String> params = new LinkedHashMap<String, String>();
+		params.put("leftTicketDTO.train_date", mUserInfo.getDate());
+		params.put("leftTicketDTO.from_station", mUserInfo.getFromStationCode());
+		params.put("leftTicketDTO.to_station", mUserInfo.getToStationCode());
+		params.put("purpose_codes", "ADULT");
+		mRequestQueue.add(new MyHttpUrlRequest(UrlConstants.REQ_TIKETSEARCH_URL,"GET",
+				HttpHeader.tiketSearch(),params,
+				new StringHttpResponse(this,STEP_QUERY_LEFT)));
+	}
+	
+	@Override
+	public void handleResponse(MyHttpResponse<?> response){
+		synchronized(mLock){		
+			Log.i("handleResponse,mStep ="+response.mStep);
+			if(response.mResponseCode == 200){
+				StringHttpResponse strResponse = (StringHttpResponse)response;
+				//Log.i(strResponse.mResult);
+				parseTicketQuery(strResponse.mResult);
+			}
+		}
+	}
+	
 	public void parseTicketQuery(String str){
 		Log.i("parseTicketQuery start");
 		Log.i("parseTicketQuery,str="+str);
@@ -66,6 +93,11 @@ public class MainProcess implements UiInterface{
 			tickInfo.setSeatType(mBestSeatType);
 			Log.i("parseTicketQuery,ticketInfo="+tickInfo.toString());
 			submitOrder(tickInfo);
+			
+			mQueryStart = false;
+			mFrameMain.setQueryState(mQueryStart);
+		}else if(mQueryStart){
+			stepQueryLeft();
 		}
 		Log.i("===================================================================");
 		Log.i("parseTicketQuery,bestTrain="+train);
@@ -75,7 +107,7 @@ public class MainProcess implements UiInterface{
 	private ProcessSubmitOrder mProcessSubmitOrder;
 	private void submitOrder(TicketInfo tickInfo){
 		mPassengerNum = mPassengerManager.getSelectedPassengers().size();
-		mProcessSubmitOrder = new ProcessSubmitOrder(this,mRequestQueue,mUserInfo,mPassengerManager);
+		mProcessSubmitOrder = new ProcessSubmitOrder(null,mRequestQueue,mUserInfo,mPassengerManager);
 		mProcessSubmitOrder.startSubmitOrderSequence(tickInfo);
 	}
 
@@ -154,7 +186,8 @@ public class MainProcess implements UiInterface{
 		String seatNum = null;
 		int num = 0;
 		for(int i=0,weight=count;i<count;i++,weight--){
-			seatNum = train.getString(seatFilter.get(i));
+			String numKey = SeatInfo.getSeatNumKey(seatFilter.get(i));
+			seatNum = train.getString(SeatInfo.getSeatNumKey(seatFilter.get(i)));
 			num = checkSeatNum(seatNum);
 			if(num >= mPassengerNum){
 				weightValue = weight;
@@ -176,10 +209,10 @@ public class MainProcess implements UiInterface{
 	
 	private int checkSeatNum(String seatNum){
 		int num = 0;
-		if(seatNum.equals("无") || seatNum.equals("--")){
-			//return num;
-		}else if(seatNum.equals("有")){
+		if(seatNum.equals("有")){
 			num = ENOUGH_SEAT_NUM;
+		}else if(seatNum.equals("无") || seatNum.equals("--") || seatNum.equals("*")){
+			num = 0;
 		}else{
 			num = Integer.valueOf(seatNum);
 		}

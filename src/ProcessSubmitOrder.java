@@ -50,15 +50,15 @@ public class ProcessSubmitOrder implements HttpResponseHandler,UiActionListener{
 	}	
 	
 	public void startSubmitOrderSequence(TicketInfo tickInfo){
-		initSubmitOrderUi();
-		
 		mSubmitTicketInfo = tickInfo;
-		stepSubmitOrderCheckUser(this);
+		
+		stepSubmitOrderCheckUser(this);		
+		initUi();
 	}
 	
-	public void initSubmitOrderUi(){
+	public void initUi(){
 		if(mFrameSubmitOrder == null){
-			mFrameSubmitOrder = new FrameSubmitOrder(this);
+			mFrameSubmitOrder = new FrameSubmitOrder(this, mSubmitTicketInfo);
 		}
 		mFrameSubmitOrder.setVisible(true);
 	}
@@ -67,6 +67,8 @@ public class ProcessSubmitOrder implements HttpResponseHandler,UiActionListener{
 	public void onUiAction(int action){
 		if(action == UiActionListener.UI_ACTION_TICKET_SUBMIT){
 			stepSubmitOrderCheckOrderInfo(this);
+		}else if(action == UiActionListener.UI_ACTION_UPDATE_CAPTCHA){
+			stepSubmitOrderGetCaptCha(this);
 		}
 	}
 	
@@ -151,7 +153,7 @@ public class ProcessSubmitOrder implements HttpResponseHandler,UiActionListener{
 			params.put("randCode", mFrameSubmitOrder.getCaptchaCode());
 			params.put("purpose_codes", "00");
 			params.put("key_check_isChange", mKeyCheckIsChange);
-			params.put("leftTicket", mSubmitTicketInfo.mYpInfo);
+			params.put("leftTicketStr", mSubmitTicketInfo.mYpInfo);
 			params.put("train_location", mSubmitTicketInfo.mLocationCode);
 			params.put("_json_att", "");
 			params.put("REPEAT_SUBMIT_TOKEN", mSubmitToken);
@@ -177,9 +179,8 @@ public class ProcessSubmitOrder implements HttpResponseHandler,UiActionListener{
 			}else if(response.mStep == STEP_SUBMIT_ORDER_REQUEST){
 				Log.i("msg="+response.mResponseMsg+",code="+response.mResponseCode);
 				if(response.mResponseCode == 200){
-					StringHttpResponse strResponse = (StringHttpResponse)response;
-					Log.i(strResponse.mResult);
-					stepSubmitOrderInitDc(this);
+					StringHttpResponse strResponse = (StringHttpResponse)response;	
+					parseSubmitOrderRequest(strResponse.mResult);
 				}
 			}else if(response.mStep == STEP_SUBMIT_ORDER_INITDC){
 				Log.i("msg="+response.mResponseMsg+",code="+response.mResponseCode);
@@ -199,7 +200,7 @@ public class ProcessSubmitOrder implements HttpResponseHandler,UiActionListener{
 				if(response.mResponseCode == 200){
 					StringHttpResponse strResponse = (StringHttpResponse)response;					
 					parseCheckInfoResponse(strResponse.mResult);
-					stepSubmitOrderGetQueueCount(this);
+					//stepSubmitOrderGetQueueCount(this);
 				}
 			}else if(response.mStep == STEP_SUBMIT_ORDER_GET_QUEUE_COUNT){
 				Log.i("msg="+response.mResponseMsg+",code="+response.mResponseCode);
@@ -218,22 +219,52 @@ public class ProcessSubmitOrder implements HttpResponseHandler,UiActionListener{
 		}
 	}
 	
-	private void parseConfimSingleResponse(String msg){
-		Log.i("parseConfimSingleResponse, msg="+msg);
+	private void parseSubmitOrderRequest(String response){
+		Log.i("parseSubmitOrderRequest,response="+response);
+		JSONObject jObj = JSONObject.fromObject(response);
+		String message = jObj.getString("messages");
+		Log.i("parseSubmitOrderRequest,messge="+message);
+		if(message.equals("[]")){
+			stepSubmitOrderInitDc(this);
+		}else{
+			mFrameSubmitOrder.showLog(message);
+		}
 	}
 	
-	private void parseGetQueueResponse(String msg){
-		Log.i("parseGetQueueResponse, msg="+msg);
+	private void parseConfimSingleResponse(String response){
+		Log.i("parseConfimSingle, response="+response);
+		JSONObject jObj = JSONObject.fromObject(response);
+		JSONObject jData = jObj.getJSONObject("data");
+		String submitStatus = jData.getString("submitStatus");
+		if(submitStatus.equals("true")){
+			mFrameSubmitOrder.showLog("∂©∆±≥…π¶£¨∏œΩÙ«Î≥‘∑π£°");
+		}else{
+			String errMsg = jData.getString("errMsg");
+			mFrameSubmitOrder.showLog(errMsg);
+		}
 	}
 	
-	private void parseCheckInfoResponse(String msg){
-		Log.i("parseCheckInfoResponse, msg="+msg);
+	private void parseGetQueueResponse(String response){
+		Log.i("parseGetQueue, msg="+response);
 	}
 	
-	private void parseInitDcResponse(String msg){
+	private void parseCheckInfoResponse(String response){
+		Log.i("parseCheckInfo, msg="+response);
+		JSONObject jObj = JSONObject.fromObject(response);
+		JSONObject jData = jObj.getJSONObject("data");
+		String submitStatus = jData.getString("submitStatus");
+		if(submitStatus.equals("true")){
+			stepSubmitOrderGetQueueCount(this);
+		}else{
+			String errMsg = jData.getString("errMsg");
+			mFrameSubmitOrder.showLog(errMsg);
+		}
+	}
+	
+	private void parseInitDcResponse(String response){
 		//Log.i("parseInitDcResponse, msg="+msg);
-		Matcher m_token = getMatcher("var globalRepeatSubmitToken = '(\\w+)'", msg);
-		Matcher m_key_check_isChange = getMatcher("'key_check_isChange':'(\\w+)'", msg);
+		Matcher m_token = getMatcher("var globalRepeatSubmitToken = '(\\w+)'", response);
+		Matcher m_key_check_isChange = getMatcher("'key_check_isChange':'(\\w+)'", response);
 		if(m_token.find()){
 			mSubmitToken = m_token.group(1);
 		}
@@ -254,6 +285,7 @@ public class ProcessSubmitOrder implements HttpResponseHandler,UiActionListener{
 		ArrayList<Passenger> passengers = mPassengerManager.getSelectedPassengers();
 		Passenger passenger;
 		int count = passengers.size();
+		Log.i("seatTypeCode="+mSubmitTicketInfo.mSeatTypeCode);
 		for (int i = 0; i < count; i++) {
 			passenger = passengers.get(i);
 			String oldStr = "";

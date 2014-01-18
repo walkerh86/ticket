@@ -1,45 +1,68 @@
-import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 
 import util.Log;
-import util.TicketInfoConstants;
 import util.UrlConstants;
-
+import net.CookieManager;
 import net.HttpHeader;
 import net.HttpResponseHandler;
 import net.ImageHttpResponse;
 import net.MyHttpResponse;
 import net.MyHttpUrlRequest;
-import net.StatusHttpResponse;
 import net.StringHttpResponse;
-import net.CookieManager;
+import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
 
 
-public class RequestProcess implements HttpResponseHandler{
+public class ProcessLogin implements HttpResponseHandler,UiActionListener{
 	public static final int STEP_GET_COOKIE = 1;
 	public static final int STEP_GET_LOGIN_CAPTCHA = 2;
-	public static final int STEP_LOGIN_AYNC_SUGGEST = 3;
-	public static final int STEP_LOGIN_REQUEST = 4;
-	public static final int STEP_LOGIN_INIT = 5;
-	public static final int STEP_QUERY_LEFT = 6;
+	public static final int STEP_CHECK_CAPTCHA_CODE = 3;
+	public static final int STEP_LOGIN_AYNC_SUGGEST = 4;
+	public static final int STEP_LOGIN_REQUEST = 5;
+	public static final int STEP_LOGIN_INIT = 6;
 	
-	public static final int STEP_INIT_PASSENGERS = 20;
-	public static final int STEP_QUERY_PASSENGERS = 21;
-	
-	private BlockingQueue<MyHttpUrlRequest> mRequestQueue;
 	private Object mLock = new Object();
 	private UiInterface mCallBack;
+	private BlockingQueue<MyHttpUrlRequest> mRequestQueue;
 	private UserInfo mUserInfo;
 	
-	public RequestProcess(BlockingQueue<MyHttpUrlRequest> queue, UiInterface cb, UserInfo userInfo){
-		mRequestQueue = queue;
+	private FrameLogin mFrameLogin;
+	
+	public ProcessLogin(UiInterface cb, BlockingQueue<MyHttpUrlRequest> queue, UserInfo userInfo){			
 		mCallBack = cb;
+		mRequestQueue = queue;
 		mUserInfo = userInfo;
+		
+		initLoginUi();
+		stepGetCookie();
 	}
 	
+	private void initLoginUi(){
+		if(mFrameLogin == null){
+			mFrameLogin = new FrameLogin(this);
+			mFrameLogin.setUserInfo(mUserInfo);
+		}
+		mFrameLogin.setVisible(true);
+	}
+	
+	public void setUiVisible(boolean visible){
+		mFrameLogin.setVisible(visible);
+	}
+	
+	@Override
+	public void onUiAction(int action){
+		if(action == UiActionListener.UI_ACTION_USER_LOGIN){
+			//stepLoginAyncSuggest();
+			stepCheckRandCodeAnsyn();
+		}else if(action == UiActionListener.UI_ACTION_UPDATE_CAPTCHA){
+			stepGetLoginCaptcha();
+		}/*else if(action == UiActionListener.UI_ACTION_CHECK_CAPTCHA){
+			stepCheckRandCodeAnsyn();
+		}*/
+	}
+	
+
 	public void stepGetCookie(){
 		mRequestQueue.add(new MyHttpUrlRequest(UrlConstants.GET_COOKIE_URL,"GET",
 				HttpHeader.loginInitHearder(),null,
@@ -50,6 +73,15 @@ public class RequestProcess implements HttpResponseHandler{
 		mRequestQueue.add(new MyHttpUrlRequest(UrlConstants.GET_LOGIN_CAPTCHA_URL,"GET",
 				HttpHeader.getPassCode(true),null,
 				new ImageHttpResponse(UrlConstants.FILE_LOGIN_CAPTCHA_URL,this,STEP_GET_LOGIN_CAPTCHA)));
+	}
+	
+	public void stepCheckRandCodeAnsyn(){		
+		LinkedHashMap<String, String> params = new LinkedHashMap<String, String>();
+		params.put("randCode", mFrameLogin.getCaptchaCode());
+		params.put("rand", "sjrand");
+		mRequestQueue.add(new MyHttpUrlRequest("https://kyfw.12306.cn/otn/passcodeNew/checkRandCodeAnsyn","POST",
+				HttpHeader.postCheckCode(),params,
+				new StringHttpResponse(this,STEP_CHECK_CAPTCHA_CODE)));
 	}
 	
 	public void stepLoginAyncSuggest(){
@@ -73,39 +105,7 @@ public class RequestProcess implements HttpResponseHandler{
 		mRequestQueue.add(new MyHttpUrlRequest("https://kyfw.12306.cn/otn/index/init","GET",
 				HttpHeader.login(),null,
 				new StringHttpResponse(this,STEP_LOGIN_INIT)));
-	}
-	
-	public void stepQueryLeft(){
-		LinkedHashMap<String, String> params = new LinkedHashMap<String, String>();
-		params.put("leftTicketDTO.train_date", mUserInfo.getDate());
-		params.put("leftTicketDTO.from_station", mUserInfo.getFromStationCode());
-		params.put("leftTicketDTO.to_station", mUserInfo.getToStationCode());
-		params.put("purpose_codes", "ADULT");
-		mRequestQueue.add(new MyHttpUrlRequest(UrlConstants.REQ_TIKETSEARCH_URL,"GET",
-				HttpHeader.tiketSearch(),params,
-				new StringHttpResponse(this,STEP_QUERY_LEFT)));
-	}
-	
-//submit order begin	
-	
-//submit order end
-	
-//get passengers begin
-	public void initPassengersRequest(HttpResponseHandler handler){
-		mRequestQueue.add(new MyHttpUrlRequest(UrlConstants.REQ_PASSENGERS_INIT_URL,"GET",
-				HttpHeader.initPassengers(),null,
-				new StringHttpResponse(handler,STEP_INIT_PASSENGERS)));
-	}
-	
-	public void queryPassengersRequest(HttpResponseHandler handler, int pageIdex, int pageSize){
-		LinkedHashMap<String, String> params = new LinkedHashMap<String, String>();
-		params.put("pageIndex",Integer.toString(pageIdex));
-		params.put("pageSize",Integer.toString(pageSize));
-		mRequestQueue.add(new MyHttpUrlRequest(UrlConstants.REQ_PASSENGERS_QUERY_URL,"POST",
-				HttpHeader.initPassengers(),params,
-				new StringHttpResponse(handler,STEP_QUERY_PASSENGERS)));
-	}
-//get passengers end
+	}	
 	
 	@Override
 	public void handleResponse(MyHttpResponse<?> response){
@@ -120,36 +120,66 @@ public class RequestProcess implements HttpResponseHandler{
 				stepGetLoginCaptcha();
 			}else if(response.mStep == STEP_GET_LOGIN_CAPTCHA){
 				ImageHttpResponse imgResponse = (ImageHttpResponse)response;
-				mCallBack.setLoginCaptcha(imgResponse.mResult);
+				//mCallBack.setLoginCaptcha(imgResponse.mResult);
+				mFrameLogin.setCaptchaIcon(imgResponse.mResult);
+			}else if(response.mStep == STEP_CHECK_CAPTCHA_CODE){
+				StringHttpResponse strResponse = (StringHttpResponse)response;
+				parseCheckRandCodeAnsyn(strResponse.mResult);				
 			}else if(response.mStep == STEP_LOGIN_AYNC_SUGGEST){
 				Log.i("code="+response.mResponseMsg);
 				if(response.mResponseCode == 200){
-					StringHttpResponse strResponse = (StringHttpResponse)response;
-					Log.i(strResponse.mResult);
-					stepLoginRequest();
+					StringHttpResponse strResponse = (StringHttpResponse)response;					
+					//stepLoginRequest();
+					parseLoginAysnSuggest(strResponse.mResult);
 				}
 			}else if(response.mStep == STEP_LOGIN_REQUEST){
 				Log.i("msg="+response.mResponseMsg+",code="+response.mResponseCode);
 				if(response.mResponseCode == 200){
 					StringHttpResponse strResponse = (StringHttpResponse)response;
-					Log.i(strResponse.mResult);
+					//Log.i(strResponse.mResult);
 					//mCallBack.loginSuccess();
 				}
 			}else if(response.mStep == STEP_LOGIN_INIT){
 				Log.i("msg="+response.mResponseMsg+",code="+response.mResponseCode);
 				if(response.mResponseCode == 200){
 					StringHttpResponse strResponse = (StringHttpResponse)response;
-					Log.i(strResponse.mResult);
-					mCallBack.loginSuccess();
-				}
-			}else if(response.mStep == STEP_QUERY_LEFT){
-				Log.i("msg="+response.mResponseMsg+",code="+response.mResponseCode);
-				if(response.mResponseCode == 200){
-					StringHttpResponse strResponse = (StringHttpResponse)response;
 					//Log.i(strResponse.mResult);
-					mCallBack.parseTicketQuery(strResponse.mResult);
+					mCallBack.loginSuccess();
 				}
 			}
 		}
 	}
+	
+	private void parseCheckRandCodeAnsyn(String response){
+		Log.i("parseCheckRandCodeAnsyn:"+response);
+		try{
+			JSONObject jObj = JSONObject.fromObject(response);
+			String result = jObj.getString("data");
+			if(result.equals("Y")){
+				stepLoginAyncSuggest();
+			}else{
+				mFrameLogin.checkCaptchaCodeFail();
+			}
+		}catch(JSONException e){
+		}
+	}
+	
+	private void parseLoginAysnSuggest(String response){
+		Log.i("parseLoginAysnSuggest:"+response);
+		String message = null;
+		try{
+			JSONObject jObj = JSONObject.fromObject(response);
+			message = jObj.getString("messages");
+			JSONObject jData = jObj.getJSONObject("data");
+			String loginCheck = jData.getString("loginCheck");
+			if(loginCheck.equals("Y")){
+				stepLoginRequest();
+			}
+		}catch(JSONException e){
+			//error
+			if(message != null){
+				mFrameLogin.showLog(message);
+			}
+		}
+	}	
 }

@@ -1,13 +1,18 @@
+import java.awt.Dimension;
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import net.CookieManager;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JFormattedTextField;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -22,7 +27,6 @@ import util.TextUtil;
 
 public class FrameMain extends JFrame{
 	private UserInfo mUserInfo;
-	private RequestProcess mTicketProcess;
 	private UiActionListener mUiActionListener;
 	
 	private JTextField mFromStationInput;
@@ -30,6 +34,10 @@ public class FrameMain extends JFrame{
 	private JFormattedTextField mDateInput;
 	private JTextField mTrainFilterInput;
 	private JTextField mSeatFilterInput;
+	private JButton mQueryBtn;
+	private JCheckBox[] mSeatCheckBoxs;
+	
+	private boolean mQueryStart;
 	
 	public FrameMain(UserInfo userInfo, UiActionListener listener){
 		mUserInfo = userInfo;
@@ -40,7 +48,7 @@ public class FrameMain extends JFrame{
 	private void initFrame(){
 		setTitle("主窗口");
 		setResizable(true);
-        setSize(600, 600); 
+        setSize(600, 400); 
         setLocationRelativeTo(null); //center in window
         addWindowListener(new WindowAdapter(){
         	public void windowClosing(WindowEvent e) { 
@@ -53,7 +61,39 @@ public class FrameMain extends JFrame{
 	}
 	
 	private void initTicketInfoLayout(){
+		JPanel rootPanel = new JPanel();
+		rootPanel.setLayout(new BoxLayout(rootPanel,BoxLayout.Y_AXIS));
+		this.setContentPane(rootPanel);
+		initOtherPanel(rootPanel);
+		initSeatPanel(rootPanel);
+	}
+	
+	private void initSeatPanel(JPanel parent){
+		JPanel seatPanel = new JPanel();		
+		seatPanel.setLayout(new BoxLayout(seatPanel,BoxLayout.X_AXIS));
+		JLabel seatType = new JLabel("席别：");
+		seatPanel.add(seatType);
+		JPanel typePanel = new JPanel();
+		typePanel.setLayout(new GridLayout(2,6));
+		seatPanel.add(typePanel);
+		//seatPanel.setLayout(null);
+		mSeatCheckBoxs = SeatInfo.getSeatCheckBoxs();
+		ArrayList<String> seatFilter = mUserInfo.getSeatFitler();
+		for(int i=0;i<mSeatCheckBoxs.length;i++){
+			typePanel.add(mSeatCheckBoxs[i]);
+			for(int j=0;j<seatFilter.size();j++){
+				if(mSeatCheckBoxs[i].getName().equals(seatFilter.get(j))){
+					mSeatCheckBoxs[i].setSelected(true);
+				}
+			}
+		}		
+
+		parent.add(seatPanel);
+	}
+	
+	private void initOtherPanel(JPanel parent){
 		JPanel panel = new JPanel();
+		panel.setBounds(10,10,500,60);
 		panel.setLayout(null);
 		this.add(panel);
 		
@@ -126,34 +166,35 @@ public class FrameMain extends JFrame{
 		mTrainFilterInput = new JTextField();
 		mTrainFilterInput.setBounds(xOffset,yOffset,FILTER_INPUT_WIDTH,ROW_HEIGHT);		
 		mTrainFilterInput.setText(mUserInfo.getTrainFitler().toString());
-		panel.add(mTrainFilterInput);
-		
-		//seat filter
-		xOffset = LEFT_PADDING; // left padding
-		yOffset += ROW_HEIGHT + 10;
-		JLabel seatFilter = new JLabel();
-		seatFilter.setText("席别");
-		seatFilter.setBounds(xOffset, yOffset, LABEL_WIDTH, ROW_HEIGHT);
-		panel.add(seatFilter);
-		xOffset += LABEL_WIDTH;
-		mSeatFilterInput = new JTextField();
-		mSeatFilterInput.setBounds(xOffset, yOffset, FILTER_INPUT_WIDTH,ROW_HEIGHT);
-		mSeatFilterInput.setText(mUserInfo.getSeatFitler().toString());
-		panel.add(mSeatFilterInput);
+		panel.add(mTrainFilterInput);		
 		
 		//qury button
 		xOffset = LEFT_PADDING; //left padding
 		yOffset += ROW_HEIGHT+10;
-		JButton qureyBtn = new JButton();
-		qureyBtn.setBounds(xOffset,yOffset,LABEL_WIDTH,ROW_HEIGHT);
-		qureyBtn.addActionListener(new ActionListener(){
+		mQueryBtn = new JButton("查询");
+		mQueryBtn.setBounds(xOffset,yOffset,LABEL_WIDTH,ROW_HEIGHT);
+		mQueryBtn.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent evt) {
-				if(checkUserInfo()){
-					mUiActionListener.onUiAction(UiActionListener.UI_ACTION_TICKET_AUTO_QUERY);
+				setQueryState(!mQueryStart);
+				if(!mQueryStart){
+					mUiActionListener.onUiAction(UiActionListener.UI_ACTION_TICKET_AUTO_QUERY_END);
+				}else if(checkUserInfo()){
+					mUiActionListener.onUiAction(UiActionListener.UI_ACTION_TICKET_AUTO_QUERY_START);
 				}
 			}
 		});
-		panel.add(qureyBtn);
+		parent.add(mQueryBtn);
+	}
+	
+	public void setQueryState(boolean queryStart){
+		if(mQueryStart != queryStart){
+			mQueryStart = queryStart;
+			if(mQueryStart){
+				mQueryBtn.setText("停止");
+			}else{
+				mQueryBtn.setText("查询");
+			}
+		}
 	}
 	
 	private boolean checkUserInfo(){
@@ -209,16 +250,23 @@ public class FrameMain extends JFrame{
 		mUserInfo.setToStationCode(toStationCode);
 		mUserInfo.setDate(date);
 		mUserInfo.setTrainFilter(mTrainFilterInput.getText());
-		mUserInfo.setSeatFilter(mSeatFilterInput.getText());
-		Log.i("checkTicketInfo,date="+date);
+		//mUserInfo.setSeatFilter(mSeatFilterInput.getText());
+		String seatType="";
+		for(int i=0;i<mSeatCheckBoxs.length;i++){
+			if(mSeatCheckBoxs[i].isSelected()){
+				if(seatType.length() > 0){
+					seatType += ",";
+				}
+				seatType += mSeatCheckBoxs[i].getName();
+			}
+		}
+		mUserInfo.setSeatFilter(seatType);
+		Log.i("saveUserInfo,seatType="+seatType);		
+		
 		return true;
 	}
 	
 	private boolean checkQueryInfo(){
 		return true;
-	}
-	
-	public void setTickProcess(RequestProcess process){
-		mTicketProcess = process;
 	}
 }
