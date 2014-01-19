@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.concurrent.BlockingQueue;
 
@@ -23,7 +24,7 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 	private UiInterface mCallBack;
 	private BlockingQueue<MyHttpUrlRequest> mRequestQueue;
 	private UserInfo mUserInfo;
-	private PassengerManager mPassengerManager;
+	private PassengerManager mPassengerManager;	
 	
 	private FrameMain mFrameMain;
 	
@@ -116,11 +117,11 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 		JSONObject bestTrain = null;
 		String bestSeatType = null;
 		int bestWeight = 0;
-		ArrayList<String> seatFilter = mUserInfo.getSeatFitler();
-		ArrayList<String> trainFilter = mUserInfo.getTrainFitler();
+		String[] seatFilter = mUserInfo.getSeatFitler();
+		String[] trainFilter = mUserInfo.getTrainFitler();
 		String priorityType = mUserInfo.getPriorityType();
-		int seatWeightMax = seatFilter.size();
-		int trainWeightMax = trainFilter.size();
+		int seatWeightMax = seatFilter.length;
+		int trainWeightMax = trainFilter.length;
 		int weightMax = seatWeightMax*trainWeightMax;
 		int count = trainList.size();
 		JSONObject train = null;
@@ -142,8 +143,8 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 			}
 			if(trainWeight > 0){
 				Log.i("getBestTrain,train="+train.getString(TicketInfoConstants.KEY_STATION_TRAIN_CODE)
-						+",swz_num="+train.getString(TicketInfoConstants.KEY_SWZ_NUM)
-						+",tz_num="+train.getString(TicketInfoConstants.KEY_TZ_NUM)
+						+",yw_num="+train.getString(TicketInfoConstants.KEY_YW_NUM)
+						+",yz_num="+train.getString(TicketInfoConstants.KEY_YZ_NUM)
 						+",zy_num="+train.getString(TicketInfoConstants.KEY_ZY_NUM)
 						+",ze_num="+train.getString(TicketInfoConstants.KEY_ZE_NUM));
 				Log.i("getBestTrain,trainWeight="+trainWeight+",seatWeight="+seatWeight);
@@ -163,13 +164,13 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 		return bestTrain;
 	}
 	
-	private int getTrainWeightValue(JSONObject train, ArrayList<String> trainFilter){
+	private int getTrainWeightValue(JSONObject train, String[] trainFilter){
 		int weightValue = 0;
-		int count = trainFilter.size();
+		int count = trainFilter.length;
 		String trainCode = null;
 		for(int i=0,weight=count;i<count;i++,weight--){
 			trainCode = train.getString(TicketInfoConstants.KEY_STATION_TRAIN_CODE);
-			if(trainCode.equals(trainFilter.get(i))){
+			if(trainCode.equals(trainFilter[i])){
 				weightValue = weight;
 				break;
 			}
@@ -180,14 +181,14 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 	private static final int ENOUGH_SEAT_NUM = 100;
 	private int mPassengerNum = 9;
 	
-	private int getSeatWeightValue(JSONObject train, ArrayList<String> seatFilter){
+	private int getSeatWeightValue(JSONObject train, String[] seatFilter){
 		int weightValue = 0;
-		int count = seatFilter.size();
+		int count = seatFilter.length;
 		String seatNum = null;
 		int num = 0;
 		for(int i=0,weight=count;i<count;i++,weight--){
-			String numKey = SeatInfo.getSeatNumKey(seatFilter.get(i));
-			seatNum = train.getString(SeatInfo.getSeatNumKey(seatFilter.get(i)));
+			String numKey = SeatInfo.getSeatNumKey(seatFilter[i]);
+			seatNum = train.getString(SeatInfo.getSeatNumKey(seatFilter[i]));
 			num = checkSeatNum(seatNum);
 			if(num >= mPassengerNum){
 				weightValue = weight;
@@ -197,12 +198,12 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 		return weightValue;
 	}
 		
-	private String getSeatTypeByWeight(int weight, ArrayList<String> seatFilter){
+	private String getSeatTypeByWeight(int weight, String[] seatFilter){
 		String seatType = null;
-		int count = seatFilter.size();
+		int count = seatFilter.length;
 		int index = count-weight;
 		if(index >=0 && index < count){
-			seatType = seatFilter.get(index);
+			seatType = seatFilter[index];
 		}
 		return seatType;
 	}

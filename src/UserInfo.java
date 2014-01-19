@@ -43,8 +43,8 @@ public class UserInfo {
 	private String mSeatTypeCode;
 	//filter info
 	private String mPriorityType = PRIORITY_TYPE_NONE;
-	private ArrayList<String> mSeatFilter = new ArrayList<String>();
-	private ArrayList<String> mTrainFilter = new ArrayList<String>();	
+	private String[] mSeatFilter;
+	private String[] mTrainFilter;	
 	//
 	private Properties mProperties = new Properties();
 	
@@ -125,31 +125,35 @@ public class UserInfo {
 		return mSeatTypeCode;
 	}
 	
-	public ArrayList<String> getSeatFitler(){
+	public String[] getSeatFitler(){
 		return mSeatFilter;
 	}
 		
-	public void setSeatFilter(String filter){
-		mSeatFilter.clear();
-		String result = filter.replace("[", "").replace("]", "");
-		String[] filters = result.split("[,]");
-		for(int i=0;i<filters.length;i++){
-			mSeatFilter.add(filters[i].trim());
-		}
+	public void setSeatFilter(String[] filter){
+		mSeatFilter = filter;
 	}
 	
-	public ArrayList<String> getTrainFitler(){
+	public void setSeatFilter(String filter){
+		if(filter == null || filter.length() == 0){
+			return;
+		}
+		mSeatFilter = filter.split("[,]");
+		Log.i("setSeatFilter,len="+mSeatFilter.length+",filter="+filter);
+	}
+	
+	public String[] getTrainFitler(){
 		return mTrainFilter;
 	}
 		
+	public void setTrainFilter(String[] filter){
+		mTrainFilter = filter;
+	}
+	
 	public void setTrainFilter(String filter){
-		mTrainFilter.clear();
-		String result = filter.replace("[", "").replace("]", "");
-		String[] filters = result.split("[,]");
-		for(int i=0;i<filters.length;i++){
-			mTrainFilter.add(filters[i].trim());
+		if(filter == null || filter.length() == 0){
+			return;
 		}
-		Log.i(mTrainFilter.toString());
+		mTrainFilter = filter.split("[,]");
 	}
 	
 	public String getPriorityType(){
@@ -209,14 +213,27 @@ public class UserInfo {
 	public void saveUserInfo(){
 		mProperties.setProperty(KEY_USER_NAME, mUserName);
 		mProperties.setProperty(KEY_USER_PW, mUserPw);
-
-		mProperties.setProperty(KEY_FROM_STATION_NAME, mFromStationName);
-		mProperties.setProperty(KEY_TO_STATION_NAME, mToStationName);
-		mProperties.setProperty(KEY_FROM_STATION_CODE, mFromStationCode);
-		mProperties.setProperty(KEY_TO_STATION_CODE, mToStationCode);
-		mProperties.setProperty(KEY_DATE, mDate);
-		mProperties.setProperty(KEY_SEAT_FILTER, mSeatFilter.toString());
-		mProperties.setProperty(KEY_TRAIN_FILTER, mTrainFilter.toString());
+		if(mFromStationName != null){
+			mProperties.setProperty(KEY_FROM_STATION_NAME, mFromStationName);
+		}
+		if(mToStationName != null){
+			mProperties.setProperty(KEY_TO_STATION_NAME, mToStationName);
+		}
+		if(mFromStationCode != null){
+			mProperties.setProperty(KEY_FROM_STATION_CODE, mFromStationCode);
+		}
+		if(mToStationCode != null){
+			mProperties.setProperty(KEY_TO_STATION_CODE, mToStationCode);
+		}
+		if(mDate != null){
+			mProperties.setProperty(KEY_DATE, mDate);
+		}
+		if(mSeatFilter != null){
+			mProperties.setProperty(KEY_SEAT_FILTER, getString(mSeatFilter));
+		}
+		if(mTrainFilter != null){
+			mProperties.setProperty(KEY_TRAIN_FILTER, getString(mTrainFilter));
+		}
 		
 		try{
 			FileOutputStream out = new FileOutputStream(new File(USER_PROPERTY_URL));
@@ -228,4 +245,20 @@ public class UserInfo {
 			Log.i("saveUserInfo,e="+e);
 		}
 	}	
+	
+	private static String getString(String[] strs){
+		if(strs.length == 0){
+			return null;
+		}
+		
+		String result = "";
+		for(int i=0;i<strs.length;i++){
+			if(result.length() > 0){
+				result += ",";
+			}
+			result += strs[i];
+		}
+		
+		return result;
+	}
 }

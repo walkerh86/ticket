@@ -1,7 +1,10 @@
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import net.CookieManager;
@@ -36,8 +39,12 @@ public class FrameMain extends JFrame{
 	private JTextField mSeatFilterInput;
 	private JButton mQueryBtn;
 	private JCheckBox[] mSeatCheckBoxs;
+	private JPanel mSeatPanel;
+	private JPanel mRootPanel;
 	
 	private boolean mQueryStart;
+	
+	private SeatInfo mSeatInfo;
 	
 	public FrameMain(UserInfo userInfo, UiActionListener listener){
 		mUserInfo = userInfo;
@@ -61,36 +68,106 @@ public class FrameMain extends JFrame{
 	}
 	
 	private void initTicketInfoLayout(){
-		JPanel rootPanel = new JPanel();
-		rootPanel.setLayout(new BoxLayout(rootPanel,BoxLayout.Y_AXIS));
-		this.setContentPane(rootPanel);
-		initOtherPanel(rootPanel);
-		initSeatPanel(rootPanel);
+		mRootPanel = new JPanel();
+		mRootPanel.setLayout(new BoxLayout(mRootPanel,BoxLayout.Y_AXIS));
+		this.setContentPane(mRootPanel);
+		initOtherPanel(mRootPanel);
+		initSeatPanel(mRootPanel);
 	}
 	
 	private void initSeatPanel(JPanel parent){
-		JPanel seatPanel = new JPanel();		
-		seatPanel.setLayout(new BoxLayout(seatPanel,BoxLayout.X_AXIS));
-		JLabel seatType = new JLabel("席别：");
-		seatPanel.add(seatType);
-		JPanel typePanel = new JPanel();
-		typePanel.setLayout(new GridLayout(2,6));
-		seatPanel.add(typePanel);
-		//seatPanel.setLayout(null);
-		mSeatCheckBoxs = SeatInfo.getSeatCheckBoxs();
-		ArrayList<String> seatFilter = mUserInfo.getSeatFitler();
-		for(int i=0;i<mSeatCheckBoxs.length;i++){
-			typePanel.add(mSeatCheckBoxs[i]);
-			for(int j=0;j<seatFilter.size();j++){
-				if(mSeatCheckBoxs[i].getName().equals(seatFilter.get(j))){
-					mSeatCheckBoxs[i].setSelected(true);
-				}
+		mSeatInfo = new SeatInfo();
+		mSeatInfo.selectMultiSeatType(mUserInfo.getSeatFitler());
+		
+		mSeatPanel = new JPanel();
+		mSeatPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
+		parent.add(mSeatPanel);
+		
+		JLabel label = new JLabel("优先席别:");
+		mSeatPanel.add(label);
+		
+		JButton addSeat = new JButton("添加");
+		addSeat.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent evt) {
+				showSeatList();
 			}
-		}		
-
-		parent.add(seatPanel);
+		});
+		mSeatPanel.add(addSeat);
+		
+		JCheckBox[] jCheckBoxs = mSeatInfo.getSelectedSeatTypeCheckBoxs();
+		if(jCheckBoxs != null){
+			for(JCheckBox checkBox : jCheckBoxs){
+				checkBox.setSelected(true);
+				checkBox.addItemListener(new ItemListener(){
+					public void itemStateChanged(ItemEvent itemEvent) {
+						JCheckBox child = (JCheckBox)itemEvent.getItem();
+						int state = itemEvent.getStateChange();
+						if(state != ItemEvent.SELECTED){
+							String key = child.getName();
+							mSeatInfo.unSelectSingleSeatType(key);
+							mSeatPanel.remove(child);
+							mSeatPanel.validate();
+							mSeatPanel.repaint();
+						}
+					}
+				});
+				mSeatPanel.add(checkBox);
+			}
+		}
 	}
 	
+	private FrameSeatList mFrameSeatList = null;
+	private LinkedHashMap<String,JCheckBox> mSeatJCheckBoxCache = new LinkedHashMap<String,JCheckBox>(10);
+	private void showSeatList(){
+		if(mFrameSeatList == null){
+			mFrameSeatList = new FrameSeatList(new FrameSeatList.onItemCheckedListener() {
+				@Override
+				public void onItemChecked(JCheckBox item, boolean checked) {
+					Log.i("onItemChecked,checked="+checked);
+					String key = item.getName();
+					JCheckBox child = null;
+					if(mSeatJCheckBoxCache.containsKey(key)){
+						child = mSeatJCheckBoxCache.get(key);
+					}
+					if(checked){
+						if(child == null){
+							child = new JCheckBox();
+							child.setName(key);
+							child.setText(item.getText());
+							child.setSelected(true);
+							child.addItemListener(new ItemListener(){
+								public void itemStateChanged(ItemEvent itemEvent) {
+									JCheckBox child = (JCheckBox)itemEvent.getItem();
+									int state = itemEvent.getStateChange();
+									if(state != ItemEvent.SELECTED){
+										String key = child.getName();
+										mSeatInfo.unSelectSingleSeatType(key);
+										mSeatPanel.remove(child);
+										mSeatPanel.validate();
+										mSeatPanel.repaint();
+									}
+								}
+							});
+							mSeatJCheckBoxCache.put(key, child);
+						}
+						mSeatInfo.selectSingleSeatType(key);
+						mSeatPanel.add(child);
+					}else{
+						mSeatInfo.unSelectSingleSeatType(key);
+						mSeatPanel.remove(child);
+					}
+					mSeatPanel.validate();
+					mSeatPanel.repaint();
+				}
+			});
+		}
+		mFrameSeatList.setVisible(true);
+	}
+	
+	private void hideSeatList(){
+		mFrameSeatList.setVisible(false);
+	}
+		
 	private void initOtherPanel(JPanel parent){
 		JPanel panel = new JPanel();
 		panel.setBounds(10,10,500,60);
@@ -165,7 +242,7 @@ public class FrameMain extends JFrame{
 		xOffset += LABEL_WIDTH;		
 		mTrainFilterInput = new JTextField();
 		mTrainFilterInput.setBounds(xOffset,yOffset,FILTER_INPUT_WIDTH,ROW_HEIGHT);		
-		mTrainFilterInput.setText(mUserInfo.getTrainFitler().toString());
+		mTrainFilterInput.setText(TextUtil.getString(mUserInfo.getTrainFitler()));
 		panel.add(mTrainFilterInput);		
 		
 		//qury button
@@ -244,24 +321,18 @@ public class FrameMain extends JFrame{
 		if(TextUtil.isEmpty(date)){
 			return false;
 		}
+		
 		mUserInfo.setFromStationName(fromStation);
 		mUserInfo.setFromStationCode(fromStationCode);
 		mUserInfo.setToStationName(toStation);
 		mUserInfo.setToStationCode(toStationCode);
 		mUserInfo.setDate(date);
 		mUserInfo.setTrainFilter(mTrainFilterInput.getText());
-		//mUserInfo.setSeatFilter(mSeatFilterInput.getText());
-		String seatType="";
-		for(int i=0;i<mSeatCheckBoxs.length;i++){
-			if(mSeatCheckBoxs[i].isSelected()){
-				if(seatType.length() > 0){
-					seatType += ",";
-				}
-				seatType += mSeatCheckBoxs[i].getName();
-			}
+		String[] seatTypes = mSeatInfo.getSelectedSeatTypes();
+		for(int i=0;i<seatTypes.length;i++){
+			Log.i("checkTicketInfo,seatTypes="+seatTypes[i]);
 		}
-		mUserInfo.setSeatFilter(seatType);
-		Log.i("saveUserInfo,seatType="+seatType);		
+		mUserInfo.setSeatFilter(mSeatInfo.getSelectedSeatTypes());
 		
 		return true;
 	}
