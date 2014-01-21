@@ -29,6 +29,8 @@ public class UserInfo {
 	public static final String PRIORITY_TYPE_SEAT = "seat";
 	public static final String PRIORITY_TYPE_TRAIN = "train";
 	
+	public static final String KEY_PASSENGERS = "passengers";
+	
 	private static final String USER_PROPERTY_URL="config.properties";
 	//user info
 	private String mUserName;
@@ -45,6 +47,8 @@ public class UserInfo {
 	private String mPriorityType = PRIORITY_TYPE_NONE;
 	private String[] mSeatFilter;
 	private String[] mTrainFilter;	
+	//passenger
+	private String mPassengers;
 	//
 	private Properties mProperties = new Properties();
 	
@@ -153,7 +157,7 @@ public class UserInfo {
 		if(filter == null || filter.length() == 0){
 			return;
 		}
-		mTrainFilter = filter.split("[,]");
+		mTrainFilter = filter.split("[,;]");
 	}
 	
 	public String getPriorityType(){
@@ -162,6 +166,14 @@ public class UserInfo {
 	
 	public void setPriorityType(String type){
 		mPriorityType = type;
+	}
+	
+	public String getPassengers(){
+		return mPassengers;
+	}
+	
+	public void setPassengers(String passengers){
+		mPassengers = passengers;
 	}
 	
 	public void loadUserInfo(){
@@ -205,6 +217,10 @@ public class UserInfo {
 			if(value != null){
 				setTrainFilter(value);
 			}
+			value = mProperties.getProperty(KEY_PASSENGERS);
+			if(value != null){
+				setPassengers(value);
+			}
 		} catch (IOException e) {
 			Log.i("loadUserInfo,e="+e);
 		}
@@ -233,6 +249,9 @@ public class UserInfo {
 		}
 		if(mTrainFilter != null){
 			mProperties.setProperty(KEY_TRAIN_FILTER, getString(mTrainFilter));
+		}
+		if(mPassengers != null){
+			mProperties.setProperty(KEY_PASSENGERS, mPassengers);
 		}
 		
 		try{

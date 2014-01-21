@@ -1,6 +1,8 @@
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.BlockingQueue;
 
 import util.Log;
@@ -35,7 +37,7 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 		mCallBack = cb;
 		mRequestQueue = queue;
 		mUserInfo = userInfo;
-		mPassengerManager = passengerManager;
+		mPassengerManager = PassengerManager.getInstance();
 		
 		initUi();
 	}
@@ -80,6 +82,14 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 		}
 	}
 	
+	public class TimerQueryTask extends TimerTask{
+	    public void run(){
+	    	stepQueryLeft();
+	    }
+	}
+	private TimerQueryTask mTimerQueryTask = new TimerQueryTask();
+	Timer mTimer = new Timer();
+	
 	public void parseTicketQuery(String str){
 		Log.i("parseTicketQuery start");
 		Log.i("parseTicketQuery,str="+str);
@@ -98,7 +108,8 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 			mQueryStart = false;
 			mFrameMain.setQueryState(mQueryStart);
 		}else if(mQueryStart){
-			stepQueryLeft();
+			//stepQueryLeft();
+			mTimer.schedule(new TimerQueryTask(), 50);
 		}
 		Log.i("===================================================================");
 		Log.i("parseTicketQuery,bestTrain="+train);

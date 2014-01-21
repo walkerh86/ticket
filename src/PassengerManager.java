@@ -1,6 +1,8 @@
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -38,27 +40,51 @@ public class PassengerManager  implements HttpResponseHandler{
 	public static final int STEP_INIT_PASSENGERS = 20;
 	public static final int STEP_QUERY_PASSENGERS = 21;
 	
+	public static final int PASSENGERS_MAX = 20;
+	
 	private Object mLock = new Object();
-	private ArrayList<Passenger> mRemotePassengers = new ArrayList<Passenger>(20);
-	private ArrayList<Passenger> mLocalPassengers = new ArrayList<Passenger>(20);
-	private ArrayList<Passenger> mSelectedPassengers = new ArrayList<Passenger>(20);
+	private LinkedHashMap<String,Passenger> mRemotePassengers = new LinkedHashMap<String,Passenger>(PASSENGERS_MAX);
+	private LinkedHashMap<String,Passenger> mLocalPassengers = new LinkedHashMap<String,Passenger>(PASSENGERS_MAX);
+	private LinkedHashMap<String,Passenger> mSelectedPassengers = new LinkedHashMap<String,Passenger>(PASSENGERS_MAX);
 	private int mTotalPage;
 	private int mPageSize;
 	private int mCurrQueryPageIdx;
 	
 	private BlockingQueue<MyHttpUrlRequest> mRequestQueue;
 	
-	public PassengerManager(BlockingQueue<MyHttpUrlRequest> queue){
+	private OnPassengersGetDoneListener mOnPassengersGetDoneListener;
+	
+	private static PassengerManager mPassengerManager;
+	private boolean mRemotePassengerGetDone;
+	
+	public PassengerManager(){
+	}
+	
+	public static PassengerManager getInstance(){
+		if(mPassengerManager == null){
+			mPassengerManager = new PassengerManager();
+		}
+		return mPassengerManager;
+	}
+	
+	public void setRequestQueue(BlockingQueue<MyHttpUrlRequest> queue){
 		mRequestQueue = queue;
 	}
 	
-	public void initPassengers(){
-		//mRequestProcess.initPassengersRequest(this);
-		//test
+	public void initPassengers(OnPassengersGetDoneListener listener){
+		mOnPassengersGetDoneListener = listener;
+		mRemotePassengers.clear();
+		if(mRemotePassengerGetDone){
+			finishQueryPassengers();
+		}else{
+			initPassengersRequest(this);
+		}
+		/*
+		 * //test
 		Passenger passenger = new Passenger();
 		passenger.setName("ºú¼Ì»ª");
 		passenger.setIdNo("413028195612085729");
-		mSelectedPassengers.add(passenger);
+		mSelectedPassengers.add(passenger);*/
 	}
 	
 	public void initPassengersRequest(HttpResponseHandler handler){
@@ -152,7 +178,7 @@ public class PassengerManager  implements HttpResponseHandler{
 			passenger.setTypeCode(jPassenger.getString(KEY_PASSENGER_TYPE_CODE));
 			//passenger.mIdTypeName = jPassenger.getString(KEY_PASSENGER_ID_TYPE_NAME);
 			passenger.setIdTypeCode(jPassenger.getString(KEY_PASSENGER_ID_TYPE_CODE));
-			mRemotePassengers.add(passenger);
+			mRemotePassengers.put(passenger.getIdNo(),passenger);
 		}
 	}
 	
@@ -166,6 +192,10 @@ public class PassengerManager  implements HttpResponseHandler{
 	}
 	
 	private void finishQueryPassengers(){
+		mRemotePassengerGetDone = true;
+		if(mOnPassengersGetDoneListener != null){
+			mOnPassengersGetDoneListener.OnPassengersGetDone(mRemotePassengers);
+		}
 		/*
 		int count = mPassengers.size();
 		Log.i("finishQueryPassengers,count="+count);
@@ -176,7 +206,65 @@ public class PassengerManager  implements HttpResponseHandler{
 		*/
 	}	
 	
-	public ArrayList<Passenger> getSelectedPassengers(){
+	public void addSelectPassenger(Passenger passenger){
+		if(!mLocalPassengers.containsKey(passenger.getIdNo())){
+			mLocalPassengers.put(passenger.getIdNo(), passenger);
+		}
+		selectSinglePassenger(passenger.getIdNo());
+	}
+	
+	public void unSelectSinglePassenger(String key){
+		if(mSelectedPassengers.containsKey(key)){
+			mSelectedPassengers.remove(key);
+		}
+	}
+	
+	public void selectSinglePassenger(String key){
+		if(mRemotePassengers.containsKey(key)){
+			mSelectedPassengers.put(key, mRemotePassengers.get(key));
+		}else if(mLocalPassengers.containsKey(key)){
+			mSelectedPassengers.put(key, mLocalPassengers.get(key));
+		}else{
+			
+		}
+	}
+	
+	public void selectMultiPassengers(String passengers){
+		if(passengers == null || passengers.length() == 0){
+			return;
+		}
+		String[] strs = passengers.split("[,]");
+		for(int i =0;i<strs.length;i++){
+			Passenger passenger = Passenger.fromString(strs[i]);
+			mSelectedPassengers.put(passenger.getIdNo(),passenger);
+			Log.i("selectMultiPassengers,name="+passenger.getName());
+		}
+	}
+		
+	public HashMap<String,Passenger> getSelectedPassengers(){
 		return mSelectedPassengers;
+	}
+	
+	public HashMap<String,Passenger> getRemotePassengers(){
+		return mRemotePassengers;
+	}
+	
+	public String getSelectedPassengersString(){
+		String result = "";
+		if(mSelectedPassengers.size() == 0){
+			return null;
+		}
+		for(Map.Entry<String, Passenger> entry : mSelectedPassengers.entrySet()){
+			if(result.length() > 0){
+				result += ",";
+			}
+			result += entry.getValue().toString();
+		}
+		Log.i("getSelectedPassengersString,result="+result);
+		return result;
+	}
+	
+	public interface OnPassengersGetDoneListener{
+		public void OnPassengersGetDone(HashMap<String,Passenger> passengers);
 	}
 }

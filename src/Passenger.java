@@ -51,4 +51,14 @@ public class Passenger {
 	public String toString() {
 		return mName + "|" + mIdNo + "|" + mTypeCode + "|" + mIdTypeCode;
 	}
+	
+	public static Passenger fromString(String str){
+		String[] passengerStr = str.split("[|]");
+		Passenger passenger = new Passenger();
+		passenger.setName(passengerStr[0]);
+		passenger.setIdNo(passengerStr[1]);
+		passenger.setTypeCode(passengerStr[2]);
+		passenger.setIdTypeCode(passengerStr[3]);
+		return passenger;
+	}
 }

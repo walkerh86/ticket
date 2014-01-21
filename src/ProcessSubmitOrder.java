@@ -1,6 +1,7 @@
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -282,12 +283,11 @@ public class ProcessSubmitOrder implements HttpResponseHandler,UiActionListener{
 	
 	public String getPassengerTicketStr() {
 		String oldStrs = "";
-		ArrayList<Passenger> passengers = mPassengerManager.getSelectedPassengers();
+		HashMap<String,Passenger> passengers = mPassengerManager.getSelectedPassengers();
 		Passenger passenger;
-		int count = passengers.size();
 		Log.i("seatTypeCode="+mSubmitTicketInfo.mSeatTypeCode);
-		for (int i = 0; i < count; i++) {
-			passenger = passengers.get(i);
+		for(Map.Entry<String, Passenger>entry : passengers.entrySet()){
+			passenger = entry.getValue();
 			String oldStr = "";
 			if ("WZ".equals(mSubmitTicketInfo.mSeatTypeCode)) {
 			} else {
@@ -304,11 +304,10 @@ public class ProcessSubmitOrder implements HttpResponseHandler,UiActionListener{
 	
 	public String getOldPassengerStr() {
 		String oldStrs = "";
-		ArrayList<Passenger> passengers = mPassengerManager.getSelectedPassengers();
+		HashMap<String,Passenger> passengers = mPassengerManager.getSelectedPassengers();
 		Passenger passenger;
-		int count = passengers.size();
-		for (int i = 0; i < count; i++) {
-			passenger = passengers.get(i);
+		for(Map.Entry<String, Passenger>entry : passengers.entrySet()){
+			passenger = entry.getValue();
 			String oldStr = passenger.getName() + "," + passenger.getIdTypeCode() + "," 
 					+ passenger.getIdNo() + "," + passenger.getTypeCode();
 			oldStrs += oldStr + "_";

@@ -10,6 +10,7 @@ import java.awt.event.WindowEvent;
 import net.CookieManager;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -41,21 +42,24 @@ public class FrameMain extends JFrame{
 	private JCheckBox[] mSeatCheckBoxs;
 	private JPanel mSeatPanel;
 	private JPanel mRootPanel;
+	private JPanel mPassengerPanel;
 	
 	private boolean mQueryStart;
 	
 	private SeatInfo mSeatInfo;
+	private PassengerManager mPassengerManager;
 	
 	public FrameMain(UserInfo userInfo, UiActionListener listener){
 		mUserInfo = userInfo;
 		mUiActionListener = listener;
+		mPassengerManager = PassengerManager.getInstance();
 		initFrame();
 	}
 	
 	private void initFrame(){
 		setTitle("主窗口");
 		setResizable(true);
-        setSize(600, 400); 
+        setSize(600, 300); 
         setLocationRelativeTo(null); //center in window
         addWindowListener(new WindowAdapter(){
         	public void windowClosing(WindowEvent e) { 
@@ -72,14 +76,47 @@ public class FrameMain extends JFrame{
 		mRootPanel.setLayout(new BoxLayout(mRootPanel,BoxLayout.Y_AXIS));
 		this.setContentPane(mRootPanel);
 		initOtherPanel(mRootPanel);
+		initPassengerPanel(mRootPanel);
 		initSeatPanel(mRootPanel);
 	}
 	
+	private void initPassengerPanel(JPanel parent){
+		mPassengerPanel = new JPanel();
+		mPassengerPanel.setPreferredSize(new Dimension(600,80));
+		mPassengerPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
+		parent.add(mPassengerPanel);
+		
+		JLabel label = new JLabel("乘客:");
+		mPassengerPanel.add(label);
+		
+		JButton addSeat = new JButton("添加");
+		addSeat.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent evt) {
+				showPassengerList();
+			}
+		});
+		mPassengerPanel.add(addSeat);
+		
+		mPassengerManager.selectMultiPassengers(mUserInfo.getPassengers());
+		HashMap<String,Passenger> passengers = mPassengerManager.getSelectedPassengers();
+		for(Map.Entry<String, Passenger> entry : passengers.entrySet()){
+			Passenger passenger = entry.getValue();
+			JCheckBox child = new JCheckBox();
+			child.setName(passenger.getIdNo());
+			child.setText(passenger.getName());
+			child.setSelected(true);
+			child.addItemListener(mPassengerItemListener);
+			mPassengerJCheckBoxCache.put(passenger.getIdNo(), child);
+			mPassengerPanel.add(child);
+		}
+	}
+		
 	private void initSeatPanel(JPanel parent){
 		mSeatInfo = new SeatInfo();
 		mSeatInfo.selectMultiSeatType(mUserInfo.getSeatFitler());
 		
 		mSeatPanel = new JPanel();
+		mPassengerPanel.setPreferredSize(new Dimension(600,80));
 		mSeatPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
 		parent.add(mSeatPanel);
 		
@@ -98,23 +135,25 @@ public class FrameMain extends JFrame{
 		if(jCheckBoxs != null){
 			for(JCheckBox checkBox : jCheckBoxs){
 				checkBox.setSelected(true);
-				checkBox.addItemListener(new ItemListener(){
-					public void itemStateChanged(ItemEvent itemEvent) {
-						JCheckBox child = (JCheckBox)itemEvent.getItem();
-						int state = itemEvent.getStateChange();
-						if(state != ItemEvent.SELECTED){
-							String key = child.getName();
-							mSeatInfo.unSelectSingleSeatType(key);
-							mSeatPanel.remove(child);
-							mSeatPanel.validate();
-							mSeatPanel.repaint();
-						}
-					}
-				});
+				checkBox.addItemListener(mSeatItemListener);
 				mSeatPanel.add(checkBox);
 			}
 		}
 	}
+	
+	private ItemListener mSeatItemListener = new ItemListener(){
+		public void itemStateChanged(ItemEvent itemEvent) {
+			JCheckBox child = (JCheckBox)itemEvent.getItem();
+			int state = itemEvent.getStateChange();
+			if(state != ItemEvent.SELECTED){
+				String key = child.getName();
+				mSeatInfo.unSelectSingleSeatType(key);
+				mSeatPanel.remove(child);
+				mSeatPanel.validate();
+				mSeatPanel.repaint();
+			}
+		}
+	};
 	
 	private FrameSeatList mFrameSeatList = null;
 	private LinkedHashMap<String,JCheckBox> mSeatJCheckBoxCache = new LinkedHashMap<String,JCheckBox>(10);
@@ -135,19 +174,7 @@ public class FrameMain extends JFrame{
 							child.setName(key);
 							child.setText(item.getText());
 							child.setSelected(true);
-							child.addItemListener(new ItemListener(){
-								public void itemStateChanged(ItemEvent itemEvent) {
-									JCheckBox child = (JCheckBox)itemEvent.getItem();
-									int state = itemEvent.getStateChange();
-									if(state != ItemEvent.SELECTED){
-										String key = child.getName();
-										mSeatInfo.unSelectSingleSeatType(key);
-										mSeatPanel.remove(child);
-										mSeatPanel.validate();
-										mSeatPanel.repaint();
-									}
-								}
-							});
+							child.addItemListener(mSeatItemListener);
 							mSeatJCheckBoxCache.put(key, child);
 						}
 						mSeatInfo.selectSingleSeatType(key);
@@ -164,13 +191,60 @@ public class FrameMain extends JFrame{
 		mFrameSeatList.setVisible(true);
 	}
 	
-	private void hideSeatList(){
-		mFrameSeatList.setVisible(false);
+	private ItemListener mPassengerItemListener = new ItemListener(){
+		public void itemStateChanged(ItemEvent itemEvent) {
+			JCheckBox child = (JCheckBox)itemEvent.getItem();
+			int state = itemEvent.getStateChange();
+			if(state != ItemEvent.SELECTED){
+				String key = child.getName();
+				mPassengerManager.unSelectSinglePassenger(key);
+				mPassengerPanel.remove(child);
+				mPassengerPanel.validate();
+				mPassengerPanel.repaint();
+			}
+		}
+	};
+	private ArrayList<Passenger> mSelectedPassengers = new ArrayList<Passenger>(20);
+	private FramePassengerList mFramePassengerList = null;
+	private LinkedHashMap<String,JCheckBox> mPassengerJCheckBoxCache = new LinkedHashMap<String,JCheckBox>(10);
+	private void showPassengerList(){
+		if(mFramePassengerList == null){
+			mFramePassengerList = new FramePassengerList(new InterfaceCommon.onItemCheckedListener() {
+				@Override
+				public void onItemChecked(JCheckBox item, boolean checked) {
+					Log.i("onItemChecked,checked="+checked);
+					String key = item.getName();
+					JCheckBox child = null;
+					if(mPassengerJCheckBoxCache.containsKey(key)){
+						child = mPassengerJCheckBoxCache.get(key);
+					}
+					if(checked){
+						if(child == null){
+							child = new JCheckBox();
+							child.setName(key);
+							child.setText(item.getText());
+							child.setSelected(true);
+							child.addItemListener(mPassengerItemListener);
+							mPassengerJCheckBoxCache.put(key, child);
+						}
+						mPassengerManager.selectSinglePassenger(key);
+						mPassengerPanel.add(child);
+					}else{
+						mPassengerManager.unSelectSinglePassenger(key);
+						mPassengerPanel.remove(child);
+					}
+					mPassengerPanel.validate();
+					mPassengerPanel.repaint();
+				}
+			});
+		}
+		mFramePassengerList.setVisible(true);
 	}
 		
 	private void initOtherPanel(JPanel parent){
 		JPanel panel = new JPanel();
-		panel.setBounds(10,10,500,60);
+		//panel.setBounds(10,10,500,60);
+		panel.setPreferredSize(new Dimension(600,100));
 		panel.setLayout(null);
 		this.add(panel);
 		
@@ -333,6 +407,7 @@ public class FrameMain extends JFrame{
 			Log.i("checkTicketInfo,seatTypes="+seatTypes[i]);
 		}
 		mUserInfo.setSeatFilter(mSeatInfo.getSelectedSeatTypes());
+		mUserInfo.setPassengers(mPassengerManager.getSelectedPassengersString());
 		
 		return true;
 	}

@@ -35,6 +35,8 @@ public class MainApp{
 		mCookieManager = new CookieManager();
 		mHttpDispatcher = new HttpDispatcher(mRequestQueue,mCookieManager);
 		mHttpDispatcher.start();
+		PassengerManager passengerManager = PassengerManager.getInstance(); 
+		passengerManager.setRequestQueue(mRequestQueue);
 				
 		mMainProcess = new MainProcess();
 		mMainProcess.init(mRequestQueue);

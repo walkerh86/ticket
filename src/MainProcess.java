@@ -41,10 +41,7 @@ public class MainProcess implements UiInterface{
 	@Override
 	public void loginSuccess(){
 		mProcessLogin.setUiVisible(false);		
-				
-		mPassengerManager = new PassengerManager(mRequestQueue);
-		mPassengerManager.initPassengers();
-		
+						
 		mProcessMainQuery = new ProcessMainQuery(this,mRequestQueue,mUserInfo,mPassengerManager);
 		
 		mUserInfo.saveUserInfo();
