@@ -1,4 +1,3 @@
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -14,7 +13,7 @@ import util.Log;
 public class SeatInfo {	
 	public static final int SEAT_TYPE_NUM = 12;
 
-	private static final HashMap<String,SeatTypeInfo> mAllSeatTypeMap = new HashMap<String,SeatTypeInfo>(SEAT_TYPE_NUM);
+	private static final HashMap<String,SeatTypeInfo> mAllSeatTypeMap = new LinkedHashMap<String,SeatTypeInfo>(SEAT_TYPE_NUM);
 	static{
 		mAllSeatTypeMap.put("sw",new SeatTypeInfo("swz_num","9","商务座"));
 		mAllSeatTypeMap.put("tz",new SeatTypeInfo("tz_num","P","特等座"));

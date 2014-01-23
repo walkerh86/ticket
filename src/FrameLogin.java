@@ -1,40 +1,10 @@
-import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Container;
-import java.awt.FlowLayout;
-import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
-import java.net.SocketAddress;
-import java.net.URL;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.concurrent.BlockingQueue;
-import java.util.zip.GZIPInputStream;
-
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-import javax.swing.AbstractButton;
-import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -43,10 +13,6 @@ import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
-
-import net.HttpHeader;
-import net.MyHttpUrlRequest;
-import net.StringHttpResponse;
 
 import util.Log;
 import util.TextUtil;
@@ -61,9 +27,6 @@ public class FrameLogin extends JFrame{
 	
 	private UiActionListener mUiActionListener;
 	
-	private static final String HOST_URL = "kyfw.12306.cn";
-	private static final String COOKIE_URL = "https://kyfw.12306.cn/otn/";
-	private BlockingQueue<MyHttpUrlRequest> mRequestQueue;
 	private UserInfo mUserInfo;
 	
 	public FrameLogin(UiActionListener listener){
@@ -74,12 +37,15 @@ public class FrameLogin extends JFrame{
 	private void initFrame(){
 		setTitle("µÇÂ½");
 		setResizable(false);
-        setSize(400, 400); 
+        setSize(400, 280); 
         setLocationRelativeTo(null); //center in window
         addWindowListener(new WindowAdapter(){
         	public void windowClosing(WindowEvent e) { 
                 System.out.println("Exit when Closed event"); 
                 System.exit(0);
+            }
+        	public void windowOpened(java.awt.event.WindowEvent evt) {
+        		checkFocus();
             }
         });
         
@@ -101,7 +67,7 @@ public class FrameLogin extends JFrame{
 		final int LABEL_WIDTH = 60;
 		final int INPUT_WIDTH = 200;
 		final int CAPTCHA_WIDTH = 78;
-		final int LOG_WIDTH = 300;
+		final int LOG_WIDTH = 400-LEFT_PADDING*2;
 		
 		int xOffset = LEFT_PADDING; //left padding
 		int yOffset = TOP_PADDING; //top padding
@@ -140,6 +106,7 @@ public class FrameLogin extends JFrame{
 		xOffset += LABEL_WIDTH;
 		
 		mCaptchaInput = new JTextField();
+		mCaptchaInput.requestFocusInWindow();
 		mCaptchaInput.setBounds(xOffset, yOffset, INPUT_WIDTH, ROW_HEIGHT);
 		mCaptchaInput.addKeyListener(new KeyAdapter(){
 			public void keyTyped(final KeyEvent e) {
@@ -182,10 +149,13 @@ public class FrameLogin extends JFrame{
 		panel.add(loginBtn);
 		
 		//row 5
-		xOffset = LEFT_PADDING; // left padding
-		yOffset += ROW_HEIGHT+ROW_GAP;
+		
+		xOffset = mCaptchaImg.getBounds().x; // left padding
+		yOffset = TOP_PADDING;
 		mLogLabel = new JTextArea();
+		mLogLabel.setBackground(new Color(0,0,0,0));
 		mLogLabel.setBounds(xOffset, yOffset, LOG_WIDTH, ROW_HEIGHT*2);
+		mLogLabel.setForeground(Color.RED);
 		panel.add(mLogLabel);
 	}
 	

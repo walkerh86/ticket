@@ -204,4 +204,18 @@ public class HttpHeader {
 		headerMap.put(XREQUESTEDWITH, XREQUESTEDWITH_VALUE);
 		return headerMap;
 	}
+	
+	public static Map<String, String> addPassenger() {
+		Map<String, String> headerMap = new LinkedHashMap<String, String>();
+		headerMap.put(ACCEPT, "*/*");
+		headerMap.put(ACCEPTENCODING, ACCEPTENCODING_VALUE);
+		headerMap.put(ACCEPTLANGUAGE, ACCEPTLANGUAGE_VALUE);
+		headerMap.put(CACHECONTROL, CACHECONTROL_VALUE);
+		headerMap.put(CONNECTION, CONNECTION_VALUE);
+		headerMap.put(HOST, HOST_VALUE);
+		headerMap.put(REFERER, "https://kyfw.12306.cn/otn/passengers/addInit");
+		headerMap.put(USERAGENT, USERAGENT_VALUE);
+		headerMap.put(XREQUESTEDWITH, XREQUESTEDWITH_VALUE);
+		return headerMap;
+	}
 }

@@ -7,6 +7,7 @@ public class Passenger {
 	private String mIdTypeCode = "1"; // default：二代身份证
 	private String mIdTypeName; // 二代身份证/一代身份证/港澳通行证/台湾通行证/护照
 	private String mMobileNo = "13428750489";	
+	private String mSexCode;
 	
 	public String getName(){
 		return mName;
@@ -46,6 +47,14 @@ public class Passenger {
 	
 	public void setMobileNo(String no){
 		mMobileNo = no;
+	}
+	
+	public String getSexCode(){
+		return mSexCode;
+	}
+	
+	public void setSexCode(String code){
+		mSexCode = code;
 	}
 	
 	public String toString() {

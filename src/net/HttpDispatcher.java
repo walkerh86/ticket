@@ -64,9 +64,12 @@ public class HttpDispatcher extends Thread{
 			boolean success = false;
 			while(!success){
 				success = processRequest(request);
+				if (mQuit) {
+                    return;
+                }
 				if(!success){
 					try{
-						Thread.sleep(50);
+						Thread.sleep(500);
 					}catch(InterruptedException e){
 						
 					}

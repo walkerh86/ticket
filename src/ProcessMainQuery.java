@@ -97,7 +97,7 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 		JSONObject jObj = JSONObject.fromObject(str);
 		String jString = jObj.getString("data");
 		
-		JSONArray trainList = JSONArray.fromObject(jString);//jsonObj.getJSONArray("data");		
+		JSONArray trainList = JSONArray.fromObject(jString);
 		JSONObject train = getBestTrain(trainList);
 		if(train != null && mBestSeatType != null){
 			TicketInfo tickInfo = TicketInfo.getTicketInfoFromJSONObject(train);
@@ -140,6 +140,7 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 		int seatWeight = 0;
 		int finalWeight = 0;
 				
+		String logStr = "";
 		for(int i=0;i<count;i++){
 			train = trainList.getJSONObject(i).getJSONObject("queryLeftNewDTO");			
 			trainWeight = getTrainWeightValue(train,trainFilter);
@@ -153,11 +154,14 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 				finalWeight = seatWeight*trainWeight;
 			}
 			if(trainWeight > 0){
-				Log.i("getBestTrain,train="+train.getString(TicketInfoConstants.KEY_STATION_TRAIN_CODE)
-						+",yw_num="+train.getString(TicketInfoConstants.KEY_YW_NUM)
-						+",yz_num="+train.getString(TicketInfoConstants.KEY_YZ_NUM)
-						+",zy_num="+train.getString(TicketInfoConstants.KEY_ZY_NUM)
-						+",ze_num="+train.getString(TicketInfoConstants.KEY_ZE_NUM));
+				logStr += train.getString(TicketInfoConstants.KEY_STATION_TRAIN_CODE)
+						+",  "+SeatInfo.getSeatName("zy")+"="+train.getString(TicketInfoConstants.KEY_ZY_NUM)
+						+",  "+SeatInfo.getSeatName("ze")+"="+train.getString(TicketInfoConstants.KEY_ZE_NUM)
+						+",  "+SeatInfo.getSeatName("rw")+"="+train.getString(TicketInfoConstants.KEY_RW_NUM)
+						+",  "+SeatInfo.getSeatName("yw")+"="+train.getString(TicketInfoConstants.KEY_YW_NUM)
+						+",  "+SeatInfo.getSeatName("rz")+"="+train.getString(TicketInfoConstants.KEY_RZ_NUM)
+						+",  "+SeatInfo.getSeatName("yz")+"="+train.getString(TicketInfoConstants.KEY_YZ_NUM)
+						+"\n";
 				Log.i("getBestTrain,trainWeight="+trainWeight+",seatWeight="+seatWeight);
 			}
 			if(finalWeight > bestWeight){
@@ -171,6 +175,7 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 			}
 		}
 		
+		mFrameMain.showLog(logStr);
 		mBestSeatType = bestSeatType;
 		return bestTrain;
 	}

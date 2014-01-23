@@ -1,5 +1,8 @@
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -8,12 +11,16 @@ import java.awt.event.ItemListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import net.CookieManager;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -21,12 +28,16 @@ import javax.swing.JFormattedTextField;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.border.Border;
+import javax.swing.border.LineBorder;
 import javax.swing.text.MaskFormatter;
 
 import util.DateHelper;
 import util.Log;
 import util.TextUtil;
+import util.TicketInfoConstants;
 
 
 public class FrameMain extends JFrame{
@@ -43,6 +54,8 @@ public class FrameMain extends JFrame{
 	private JPanel mSeatPanel;
 	private JPanel mRootPanel;
 	private JPanel mPassengerPanel;
+	private JPanel mTrainListPanel;
+	private JTextArea mLogLabel;
 	
 	private boolean mQueryStart;
 	
@@ -59,7 +72,7 @@ public class FrameMain extends JFrame{
 	private void initFrame(){
 		setTitle("Ö÷´°¿Ú");
 		setResizable(true);
-        setSize(600, 300); 
+        setSize(600, 500); 
         setLocationRelativeTo(null); //center in window
         addWindowListener(new WindowAdapter(){
         	public void windowClosing(WindowEvent e) { 
@@ -78,8 +91,13 @@ public class FrameMain extends JFrame{
 		initOtherPanel(mRootPanel);
 		initPassengerPanel(mRootPanel);
 		initSeatPanel(mRootPanel);
+		
+		mLogLabel = new JTextArea("test");
+		mLogLabel.setBackground(new Color(0,0,0,0));
+		mLogLabel.setPreferredSize(new Dimension(600,20));
+		mRootPanel.add(mLogLabel);
 	}
-	
+		
 	private void initPassengerPanel(JPanel parent){
 		mPassengerPanel = new JPanel();
 		mPassengerPanel.setPreferredSize(new Dimension(600,80));
@@ -198,13 +216,14 @@ public class FrameMain extends JFrame{
 			if(state != ItemEvent.SELECTED){
 				String key = child.getName();
 				mPassengerManager.unSelectSinglePassenger(key);
+				mFramePassengerList.unSelectPassenger(key);
 				mPassengerPanel.remove(child);
 				mPassengerPanel.validate();
 				mPassengerPanel.repaint();
 			}
 		}
 	};
-	private ArrayList<Passenger> mSelectedPassengers = new ArrayList<Passenger>(20);
+	
 	private FramePassengerList mFramePassengerList = null;
 	private LinkedHashMap<String,JCheckBox> mPassengerJCheckBoxCache = new LinkedHashMap<String,JCheckBox>(10);
 	private void showPassengerList(){
@@ -222,11 +241,11 @@ public class FrameMain extends JFrame{
 						if(child == null){
 							child = new JCheckBox();
 							child.setName(key);
-							child.setText(item.getText());
-							child.setSelected(true);
+							child.setText(item.getText());							
 							child.addItemListener(mPassengerItemListener);
 							mPassengerJCheckBoxCache.put(key, child);
 						}
+						child.setSelected(true);
 						mPassengerManager.selectSinglePassenger(key);
 						mPassengerPanel.add(child);
 					}else{
@@ -244,7 +263,7 @@ public class FrameMain extends JFrame{
 	private void initOtherPanel(JPanel parent){
 		JPanel panel = new JPanel();
 		//panel.setBounds(10,10,500,60);
-		panel.setPreferredSize(new Dimension(600,100));
+		panel.setPreferredSize(new Dimension(600,120));
 		panel.setLayout(null);
 		this.add(panel);
 		
@@ -258,7 +277,7 @@ public class FrameMain extends JFrame{
 		final int CAPTCHA_WIDTH = 78;
 		final int STATION_INPUT_WIDTH = 100;
 		final int DATE_INPUT_WIDTH = 150;
-		final int FILTER_INPUT_WIDTH = 200;
+		final int FILTER_INPUT_WIDTH = 400;
 		
 		int xOffset = LEFT_PADDING; //left padding
 		int yOffset = TOP_PADDING; //top padding
@@ -335,6 +354,14 @@ public class FrameMain extends JFrame{
 			}
 		});
 		parent.add(mQueryBtn);
+	}
+	
+	public void showLog(String... messages){
+		String msg = new String();
+		for (String message : messages) {
+			msg += message+"\n";
+		}
+		mLogLabel.setText(msg);
 	}
 	
 	public void setQueryState(boolean queryStart){

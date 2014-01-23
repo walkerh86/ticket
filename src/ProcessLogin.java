@@ -135,14 +135,14 @@ public class ProcessLogin implements HttpResponseHandler,UiActionListener{
 			}else if(response.mStep == STEP_LOGIN_REQUEST){
 				Log.i("msg="+response.mResponseMsg+",code="+response.mResponseCode);
 				if(response.mResponseCode == 200){
-					StringHttpResponse strResponse = (StringHttpResponse)response;
+					//StringHttpResponse strResponse = (StringHttpResponse)response;
 					//Log.i(strResponse.mResult);
 					//mCallBack.loginSuccess();
 				}
 			}else if(response.mStep == STEP_LOGIN_INIT){
 				Log.i("msg="+response.mResponseMsg+",code="+response.mResponseCode);
 				if(response.mResponseCode == 200){
-					StringHttpResponse strResponse = (StringHttpResponse)response;
+					//StringHttpResponse strResponse = (StringHttpResponse)response;
 					//Log.i(strResponse.mResult);
 					mCallBack.loginSuccess();
 				}
@@ -180,6 +180,8 @@ public class ProcessLogin implements HttpResponseHandler,UiActionListener{
 			if(message != null){
 				mFrameLogin.showLog(message);
 			}
+			//must update captcha;
+			stepGetLoginCaptcha();
 		}
 	}	
 }

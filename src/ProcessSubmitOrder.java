@@ -238,7 +238,7 @@ public class ProcessSubmitOrder implements HttpResponseHandler,UiActionListener{
 		JSONObject jData = jObj.getJSONObject("data");
 		String submitStatus = jData.getString("submitStatus");
 		if(submitStatus.equals("true")){
-			mFrameSubmitOrder.showLog("¶©Æ±³É¹¦£¬¸Ï½ôÇë³Ô·¹£¡");
+			mFrameSubmitOrder.showLog("¶©Æ±³É¹¦£¬¼ì²é¶©µ¥£¡");
 		}else{
 			String errMsg = jData.getString("errMsg");
 			mFrameSubmitOrder.showLog(errMsg);
@@ -289,7 +289,7 @@ public class ProcessSubmitOrder implements HttpResponseHandler,UiActionListener{
 		for(Map.Entry<String, Passenger>entry : passengers.entrySet()){
 			passenger = entry.getValue();
 			String oldStr = "";
-			if ("WZ".equals(mSubmitTicketInfo.mSeatTypeCode)) {
+			if ("wz".equals(mSubmitTicketInfo.mSeatTypeCode)) {
 			} else {
 				oldStr = mSubmitTicketInfo.mSeatTypeCode;
 			}
