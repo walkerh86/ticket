@@ -30,7 +30,9 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 	
 	private FrameMain mFrameMain;
 	
-	private boolean mQueryStart = false;
+	private boolean mAutoQueryStart = false;
+	private boolean mQueryAuto = false;
+	HashSet<String> mTrainTypeFilters = new HashSet<String>();
 	
 	public ProcessMainQuery(UiInterface cb, BlockingQueue<MyHttpUrlRequest> queue, 
 			UserInfo userInfo, PassengerManager passengerManager){	
@@ -49,14 +51,22 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 	
 	@Override
 	public void onUiAction(int action){
-		if(action == UiActionListener.UI_ACTION_TICKET_AUTO_QUERY_START){
-			if(!mQueryStart){
-				mQueryStart = true;
+		if(action == UiActionListener.UI_ACTION_TICKET_QUERY){
+			if(mAutoQueryStart){
+				mAutoQueryStart = false;
+				mFrameMain.setQueryState(mAutoQueryStart);
+			}else{
+				mTrainTypeFilters = mFrameMain.getTrainTypeFilter();
+				mQueryAuto = mUserInfo.getQueryAuto().equals("true") ? true : false;				
+				if(mQueryAuto){
+					mAutoQueryStart = true;
+				}
+				mFrameMain.setQueryState(mAutoQueryStart);
 				stepQueryLeft();
 			}
-		}else if(action == UI_ACTION_TICKET_AUTO_QUERY_END){
-			mQueryStart = false;
-		}
+		}/*else if(action == UI_ACTION_TICKET_AUTO_QUERY_END){
+			mAutoQueryStart = false;
+		}*/
 	}
 	
 	public void stepQueryLeft(){
@@ -105,9 +115,9 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 			Log.i("parseTicketQuery,ticketInfo="+tickInfo.toString());
 			submitOrder(tickInfo);
 			
-			mQueryStart = false;
-			mFrameMain.setQueryState(mQueryStart);
-		}else if(mQueryStart){
+			mAutoQueryStart = false;
+			mFrameMain.setQueryState(mAutoQueryStart);
+		}else if(mAutoQueryStart){
 			//stepQueryLeft();
 			mTimer.schedule(new TimerQueryTask(), 50);
 		}
@@ -142,7 +152,11 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 				
 		String logStr = "";
 		for(int i=0;i<count;i++){
-			train = trainList.getJSONObject(i).getJSONObject("queryLeftNewDTO");			
+			train = trainList.getJSONObject(i).getJSONObject("queryLeftNewDTO");
+			String trainCode = train.getString(TicketInfoConstants.KEY_STATION_TRAIN_CODE);
+			if(checkTrainCodeFilter(trainCode)){
+				continue;
+			}
 			trainWeight = getTrainWeightValue(train,trainFilter);
 			seatWeight = getSeatWeightValue(train,seatFilter);	
 			
@@ -234,5 +248,26 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 			num = Integer.valueOf(seatNum);
 		}
 		return num;
+	}
+	
+	private boolean checkTrainCodeFilter(String trainCode){
+		if(mTrainTypeFilters.size() == 0){
+			return false;
+		}
+		boolean filtered = false;
+		String type = trainCode.substring(0, 1);
+		if(type.equals(UserInfo.TRAIN_TYPE_FILTER_G) 
+			|| type.equals(UserInfo.TRAIN_TYPE_FILTER_D)
+			|| type.equals(UserInfo.TRAIN_TYPE_FILTER_Z)
+			|| type.equals(UserInfo.TRAIN_TYPE_FILTER_T)
+			|| type.equals(UserInfo.TRAIN_TYPE_FILTER_K)){
+			
+		}else{
+			type = "Q";
+		}
+		if(!mTrainTypeFilters.contains(type)){
+			filtered = true;
+		}
+		return filtered;
 	}
 }

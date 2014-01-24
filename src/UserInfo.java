@@ -23,13 +23,26 @@ public class UserInfo {
 	private static final String KEY_DATE="date";
 	private static final String KEY_SEAT_FILTER="seat_filter";
 	private static final String KEY_TRAIN_FILTER="train_filter";
+	private static final String KEY_TRAIN_TYPE_FILTER="train_type_filter";
 	private static final String KEY_PRIORITY_TYPE="priority_type";
+	private static final String KEY_AUTO_QUERY="auto_query";
+	private static final String KEY_QUERY_MODE="query_mode";
+	public static final String KEY_PASSENGERS = "passengers";
+	
+	public static final String QUERY_MODE_QIANG = "qiang";
+	public static final String QUERY_MODE_JIAN = "jian";
 	
 	public static final String PRIORITY_TYPE_NONE = "none";
 	public static final String PRIORITY_TYPE_SEAT = "seat";
 	public static final String PRIORITY_TYPE_TRAIN = "train";
 	
-	public static final String KEY_PASSENGERS = "passengers";
+	public static final String TRAIN_TYPE_FILTER_ALL = "ALL";
+	public static final String TRAIN_TYPE_FILTER_G = "G";
+	public static final String TRAIN_TYPE_FILTER_D = "D";
+	public static final String TRAIN_TYPE_FILTER_Z = "Z";
+	public static final String TRAIN_TYPE_FILTER_T = "T";
+	public static final String TRAIN_TYPE_FILTER_K = "K";
+	public static final String TRAIN_TYPE_FILTER_Q = "Q";
 	
 	private static final String USER_PROPERTY_URL="config.properties";
 	//user info
@@ -43,10 +56,14 @@ public class UserInfo {
 	private String mToStationCode;
 	private String mDate;
 	private String mSeatTypeCode;
-	//filter info
-	private String mPriorityType = PRIORITY_TYPE_NONE;
+	//filter info	
 	private String[] mSeatFilter;
 	private String[] mTrainFilter;	
+	private String mTrainTypeFilter;
+	//
+	private String mPriorityType = PRIORITY_TYPE_NONE;
+	private String mQueryAuto = "false";
+	private String mQueryMode = QUERY_MODE_QIANG;
 	//passenger
 	private String mPassengers;
 	//
@@ -176,6 +193,30 @@ public class UserInfo {
 		mPassengers = passengers;
 	}
 	
+	public String getTrainTypeFilter(){
+		return mTrainTypeFilter;
+	}
+	
+	public void setTrainTypeFilter(String filter){
+		mTrainTypeFilter = filter;
+	}
+	
+	public String getQueryAuto(){
+		return mQueryAuto;
+	}
+	
+	public void setQueryAuto(String auto){
+		mQueryAuto = auto;
+	}
+	
+	public String getQueryMode(){
+		return mQueryMode;
+	}
+	
+	public void setQueryMode(String mode){
+		mQueryMode = mode;
+	}
+	
 	public void loadUserInfo(){
 		try {
 			InputStream is = new FileInputStream(new File(USER_PROPERTY_URL));
@@ -221,6 +262,22 @@ public class UserInfo {
 			if(value != null){
 				setPassengers(value);
 			}
+			value = mProperties.getProperty(KEY_PRIORITY_TYPE);
+			if(value != null){
+				setPriorityType(value);
+			}
+			value = mProperties.getProperty(KEY_TRAIN_TYPE_FILTER);
+			if(value != null){
+				setTrainTypeFilter(value);
+			}
+			value = mProperties.getProperty(KEY_AUTO_QUERY);
+			if(value != null){
+				setQueryAuto(value);
+			}
+			value = mProperties.getProperty(KEY_QUERY_MODE);
+			if(value != null){
+				setQueryMode(value);
+			}
 		} catch (IOException e) {
 			Log.i("loadUserInfo,e="+e);
 		}
@@ -252,6 +309,18 @@ public class UserInfo {
 		}
 		if(mPassengers != null){
 			mProperties.setProperty(KEY_PASSENGERS, mPassengers);
+		}
+		if(mPriorityType != null){
+			mProperties.setProperty(KEY_PRIORITY_TYPE, mPriorityType);
+		}
+		if(mTrainTypeFilter != null){
+			mProperties.setProperty(KEY_TRAIN_TYPE_FILTER, mTrainTypeFilter);
+		}
+		if(mQueryAuto != null){
+			mProperties.setProperty(KEY_AUTO_QUERY, mQueryAuto);
+		}
+		if(mQueryMode != null){
+			mProperties.setProperty(KEY_QUERY_MODE, mQueryMode);
 		}
 		
 		try{

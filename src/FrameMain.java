@@ -3,7 +3,7 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.GridLayout;
+import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
@@ -11,17 +11,14 @@ import java.awt.event.ItemListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import net.CookieManager;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
 
 import java.text.ParseException;
-import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JFormattedTextField;
@@ -30,14 +27,11 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
-import javax.swing.border.Border;
-import javax.swing.border.LineBorder;
 import javax.swing.text.MaskFormatter;
 
 import util.DateHelper;
 import util.Log;
 import util.TextUtil;
-import util.TicketInfoConstants;
 
 
 public class FrameMain extends JFrame{
@@ -48,19 +42,25 @@ public class FrameMain extends JFrame{
 	private JTextField mToStationInput;
 	private JFormattedTextField mDateInput;
 	private JTextField mTrainFilterInput;
-	private JTextField mSeatFilterInput;
 	private JButton mQueryBtn;
-	private JCheckBox[] mSeatCheckBoxs;
 	private JPanel mSeatPanel;
 	private JPanel mRootPanel;
 	private JPanel mPassengerPanel;
-	private JPanel mTrainListPanel;
 	private JTextArea mLogLabel;
+	private JCheckBox mAutoCheckBox;
+	private JCheckBox mPrioritySeatCheckBox;
+	private JCheckBox mPriorityTrainCheckBox;
+	private JCheckBox mQueryModeQiangCheckBox;
+	private JCheckBox mQueryModeJianCheckBox;
 	
-	private boolean mQueryStart;
+	private boolean mAutoQueryStart;
 	
 	private SeatInfo mSeatInfo;
 	private PassengerManager mPassengerManager;
+	
+	private HashSet<String> mTrainTypeFilters = new HashSet<String>();
+	
+	private MessageDialog mMessageDialog = new MessageDialog();
 	
 	public FrameMain(UserInfo userInfo, UiActionListener listener){
 		mUserInfo = userInfo;
@@ -83,29 +83,249 @@ public class FrameMain extends JFrame{
         
         initTicketInfoLayout();
 	}
-	
+	GridBagLayout gridBagLayout = new GridBagLayout();
 	private void initTicketInfoLayout(){
+		
+		GridBagConstraints c = new GridBagConstraints();
+		c.fill =GridBagConstraints.HORIZONTAL;
+		c.weighty = 0;
+				
 		mRootPanel = new JPanel();
-		mRootPanel.setLayout(new BoxLayout(mRootPanel,BoxLayout.Y_AXIS));
+		mRootPanel.setLayout(gridBagLayout);
 		this.setContentPane(mRootPanel);
-		initOtherPanel(mRootPanel);
-		initPassengerPanel(mRootPanel);
-		initSeatPanel(mRootPanel);
+		
+		initStationDatePanel(mRootPanel,c);
+		initTrainTypeFilterPanel(mRootPanel,c);
+		initTrainFilterPanel(mRootPanel,c);
+		initPassengerPanel(mRootPanel,c);
+		initSeatPanel(mRootPanel,c);
+		initQueryOptionPanel(mRootPanel,c);
 		
 		mLogLabel = new JTextArea("test");
 		mLogLabel.setBackground(new Color(0,0,0,0));
-		mLogLabel.setPreferredSize(new Dimension(600,20));
-		mRootPanel.add(mLogLabel);
+		c.gridx = 0;
+		c.gridy = 8;
+		c.weighty = 1;
+		c.gridwidth = 9;
+		mRootPanel.add(mLogLabel,c);
 	}
+	
+	private void initStationDatePanel(JPanel parent, GridBagConstraints c){
+		c.gridy = 0;
+		c.gridheight = 1;
+		c.insets = new Insets(8,0,0,0);
+		//from station
+		JLabel fromStation = new JLabel();
+		fromStation.setText("出发地：");
+		c.gridx = 0;
+		c.weightx = 0;
+		c.gridwidth = 1;
+		parent.add(fromStation, c);
 		
-	private void initPassengerPanel(JPanel parent){
-		mPassengerPanel = new JPanel();
-		mPassengerPanel.setPreferredSize(new Dimension(600,80));
-		mPassengerPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
-		parent.add(mPassengerPanel);
+		mFromStationInput = new JTextField();
+		c.gridx = 1;		
+		c.weightx = 1;
+		c.gridwidth = 2;
+		mFromStationInput.setText(mUserInfo.getFromStationName());
+		parent.add(mFromStationInput,c);
+		// to station
+		JLabel toStation = new JLabel();
+		toStation.setText("目的地：");
+		c.gridx = 3;
+		c.weightx = 0;
+		c.gridwidth = 1;
+		c.fill = GridBagConstraints.HORIZONTAL;
+		parent.add(toStation,c);
+		mToStationInput = new JTextField();
+		c.gridx = 4;
+		c.weightx = 1;
+		c.gridwidth = 2;
+		mToStationInput.setText(mUserInfo.getToStationName());
+		parent.add(mToStationInput,c);
+		//date
+		JLabel date = new JLabel();
+		date.setText("出发日期：");
+		c.gridx = 6;
+		c.weightx = 0;
+		c.gridwidth = 1;
+		parent.add(date,c);
 		
-		JLabel label = new JLabel("乘客:");
-		mPassengerPanel.add(label);
+		MaskFormatter mf = null;
+		try {
+			mf = new MaskFormatter("####-##-##");
+		} catch (ParseException e1) {
+			e1.printStackTrace();
+		}
+		mDateInput = new JFormattedTextField(mf);
+		c.gridx = 7;
+		c.weightx = 1;
+		c.gridwidth = 2;
+		mDateInput.setColumns(10);
+		if (!TextUtil.isEmpty(mUserInfo.getDate())) {
+			mDateInput.setText(mUserInfo.getDate());
+		}
+		parent.add(mDateInput,c);
+	}
+	
+	private void initTrainTypeFilterPanel(JPanel parent, GridBagConstraints c){
+		c.gridy = 2;
+		c.gridheight = 1;
+		
+		JLabel trainTypeTag = new JLabel("车次类型：");
+		c.gridx = 0;
+		c.weightx = 0;
+		c.gridwidth = 1;
+		gridBagLayout.setConstraints(trainTypeTag,c);
+		parent.add(trainTypeTag);
+		
+		JPanel trainTypePanel = new JPanel();
+		trainTypePanel.setLayout(new FlowLayout(FlowLayout.LEFT));
+		c.gridx = 1;
+		c.weightx = 1;
+		c.gridwidth = 8;
+		parent.add(trainTypePanel,c);
+		
+		String trainTypeFilter = mUserInfo.getTrainTypeFilter();
+		if(trainTypeFilter != null){
+			String[] filters = trainTypeFilter.split("[,]");
+			for(int i=0;i<filters.length;i++){
+				mTrainTypeFilters.add(filters[i]);
+			}
+		}
+	
+		for(int i=0;i<mTrainTypeKeys.length;i++){
+			JCheckBox child = new JCheckBox(mTrainTypeNames[i]);
+			child.setName(mTrainTypeKeys[i]);
+			trainTypePanel.add(child);
+			if(mTrainTypeFilters.contains(mTrainTypeKeys[i])){
+				child.setSelected(true);
+			}
+			child.addItemListener(mTrainTypeItemCheckListener);
+			mTrainTypeViewCache.put(mTrainTypeKeys[i],child);
+		}
+	}
+	
+	private void initTrainFilterPanel(JPanel parent, GridBagConstraints c){
+		c.gridy = 1;
+		c.gridheight = 1;
+		
+		JLabel trainFilter = new JLabel();
+		trainFilter.setText("限制车次：");
+		c.gridx = 0;
+		c.weightx = 0;
+		c.gridwidth = 1;
+		parent.add(trainFilter,c);
+		mTrainFilterInput = new JTextField();
+		c.gridx = 1;
+		c.weightx = 1;
+		c.gridwidth = 8;
+		mTrainFilterInput.setText(TextUtil.getString(mUserInfo.getTrainFitler()));
+		parent.add(mTrainFilterInput,c);	
+	}
+	
+	private void initQueryOptionPanel(JPanel parent, GridBagConstraints c){
+		c.gridy = 7;
+		c.gridheight = 1;
+		JLabel optionLabel = new JLabel("选项：");
+		c.gridx = 0;
+		c.weightx = 0;
+		c.gridwidth = 1;
+		parent.add(optionLabel,c);
+		
+		mQueryBtn = new JButton("查询");
+		mQueryBtn.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent evt) {
+				if(mAutoQueryStart || checkUserInfo()){
+					mUiActionListener.onUiAction(UiActionListener.UI_ACTION_TICKET_QUERY);
+				}
+			}
+		});
+		c.gridx = 1;
+		c.weightx = 0;
+		c.gridwidth = 1;
+		parent.add(mQueryBtn,c);
+		
+		JPanel optionPanel = new JPanel();
+		optionPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
+		c.gridx = 2;		
+		c.weightx = 1;
+		c.gridwidth = 8;
+		parent.add(optionPanel,c);
+		
+		mAutoCheckBox = new JCheckBox("自动");
+		mAutoCheckBox.setSelected(mUserInfo.getQueryAuto().equals("true"));
+		optionPanel.add(mAutoCheckBox);		
+		
+		String prioirtyType = mUserInfo.getPriorityType();
+		mPrioritySeatCheckBox = new JCheckBox("席别优先");
+		mPrioritySeatCheckBox.setName(UserInfo.PRIORITY_TYPE_SEAT);
+		if(prioirtyType.equals(UserInfo.PRIORITY_TYPE_SEAT)){
+			mPrioritySeatCheckBox.setSelected(true);
+		}
+		mPrioritySeatCheckBox.addItemListener(mPriorityItemListener);		
+		optionPanel.add(mPrioritySeatCheckBox);
+		
+		mPriorityTrainCheckBox = new JCheckBox("席别优先");
+		mPriorityTrainCheckBox.setName(UserInfo.PRIORITY_TYPE_TRAIN);
+		if(prioirtyType.equals(UserInfo.PRIORITY_TYPE_TRAIN)){
+			mPriorityTrainCheckBox.setSelected(true);
+		}
+		mPriorityTrainCheckBox.addItemListener(mPriorityItemListener);
+		optionPanel.add(mPriorityTrainCheckBox);
+				
+		String queryMode = mUserInfo.getQueryMode();
+		mQueryModeQiangCheckBox = new JCheckBox("抢票");
+		mQueryModeQiangCheckBox.setName(UserInfo.QUERY_MODE_QIANG);
+		if(queryMode.equals(UserInfo.QUERY_MODE_QIANG)){
+			mQueryModeQiangCheckBox.setSelected(true);
+		}
+		mQueryModeQiangCheckBox.addItemListener(mQueryModeItemListener);
+		optionPanel.add(mQueryModeQiangCheckBox);
+		
+		mQueryModeJianCheckBox = new JCheckBox("捡漏");
+		mQueryModeJianCheckBox.setName(UserInfo.QUERY_MODE_JIAN);
+		if(queryMode.equals(UserInfo.QUERY_MODE_JIAN)){
+			mQueryModeJianCheckBox.setSelected(true);
+		}
+		mQueryModeJianCheckBox.addItemListener(mQueryModeItemListener);
+		optionPanel.add(mQueryModeJianCheckBox);
+	}
+	private ItemListener mPriorityItemListener = new ItemListener(){
+		public void itemStateChanged(ItemEvent itemEvent) {
+			JCheckBox child = (JCheckBox)itemEvent.getItem();
+			int state = itemEvent.getStateChange();
+			if(state == ItemEvent.SELECTED){
+				if(child == mPrioritySeatCheckBox){
+					mPriorityTrainCheckBox.setSelected(false);
+				}else{
+					mPrioritySeatCheckBox.setSelected(false);
+				}
+			}
+		}
+	};
+	private ItemListener mQueryModeItemListener = new ItemListener(){
+		public void itemStateChanged(ItemEvent itemEvent) {
+			JCheckBox child = (JCheckBox)itemEvent.getItem();
+			int state = itemEvent.getStateChange();
+			if(state != ItemEvent.SELECTED){
+				if(child == mQueryModeQiangCheckBox){
+					mQueryModeJianCheckBox.setSelected(false);
+				}else{
+					mQueryModeQiangCheckBox.setSelected(false);
+				}
+			}
+		}
+	};
+		
+	private void initPassengerPanel(JPanel parent, GridBagConstraints c){
+		c.gridy = 3;
+		c.gridheight = 2;
+		
+		JLabel label = new JLabel("乘客：");
+		c.gridx = 0;		
+		c.weightx = 0;
+		c.gridwidth = 1;
+		parent.add(label,c);
 		
 		JButton addSeat = new JButton("添加");
 		addSeat.addActionListener(new ActionListener(){
@@ -113,7 +333,18 @@ public class FrameMain extends JFrame{
 				showPassengerList();
 			}
 		});
-		mPassengerPanel.add(addSeat);
+		c.gridx = 1;		
+		c.weightx = 0;
+		c.gridwidth = 1;
+		parent.add(addSeat,c);
+		
+		mPassengerPanel = new JPanel();
+		mPassengerPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
+		mPassengerPanel.setPreferredSize(new Dimension(300,60));//cann't change line without this line
+		c.gridx = 2;		
+		c.weightx = 1;
+		c.gridwidth = 7;
+		parent.add(mPassengerPanel,c);
 		
 		mPassengerManager.selectMultiPassengers(mUserInfo.getPassengers());
 		HashMap<String,Passenger> passengers = mPassengerManager.getSelectedPassengers();
@@ -129,17 +360,18 @@ public class FrameMain extends JFrame{
 		}
 	}
 		
-	private void initSeatPanel(JPanel parent){
+	private void initSeatPanel(JPanel parent, GridBagConstraints c){
+		c.gridy = 5;
+		c.gridheight = 2;
+		
 		mSeatInfo = new SeatInfo();
 		mSeatInfo.selectMultiSeatType(mUserInfo.getSeatFitler());
 		
-		mSeatPanel = new JPanel();
-		mPassengerPanel.setPreferredSize(new Dimension(600,80));
-		mSeatPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
-		parent.add(mSeatPanel);
-		
-		JLabel label = new JLabel("优先席别:");
-		mSeatPanel.add(label);
+		JLabel label = new JLabel("优先席别：");
+		c.gridx = 0;
+		c.weightx = 0;
+		c.gridwidth = 1;
+		parent.add(label,c);
 		
 		JButton addSeat = new JButton("添加");
 		addSeat.addActionListener(new ActionListener(){
@@ -147,7 +379,17 @@ public class FrameMain extends JFrame{
 				showSeatList();
 			}
 		});
-		mSeatPanel.add(addSeat);
+		c.gridx = 1;
+		c.weightx = 0;
+		c.gridwidth = 1;
+		parent.add(addSeat,c);
+		
+		mSeatPanel = new JPanel();		
+		mSeatPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
+		c.gridx = 2;
+		c.weightx = 1;
+		c.gridwidth = 7;
+		parent.add(mSeatPanel,c);
 		
 		JCheckBox[] jCheckBoxs = mSeatInfo.getSelectedSeatTypeCheckBoxs();
 		if(jCheckBoxs != null){
@@ -216,10 +458,14 @@ public class FrameMain extends JFrame{
 			if(state != ItemEvent.SELECTED){
 				String key = child.getName();
 				mPassengerManager.unSelectSinglePassenger(key);
-				mFramePassengerList.unSelectPassenger(key);
+				if(mFramePassengerList != null){
+					mFramePassengerList.unSelectPassenger(key);
+				}
 				mPassengerPanel.remove(child);
 				mPassengerPanel.validate();
 				mPassengerPanel.repaint();
+				mRootPanel.validate();
+				mRootPanel.repaint();
 			}
 		}
 	};
@@ -259,119 +505,50 @@ public class FrameMain extends JFrame{
 		}
 		mFramePassengerList.setVisible(true);
 	}
-		
-	private void initOtherPanel(JPanel parent){
-		JPanel panel = new JPanel();
-		//panel.setBounds(10,10,500,60);
-		panel.setPreferredSize(new Dimension(600,120));
-		panel.setLayout(null);
-		this.add(panel);
-		
-		final int ROW_HEIGHT = 42;
-		final int TOP_PADDING = 20;
-		final int LEFT_PADDING = 20;
-		final int ROW_GAP = 15;
-		final int COL_GAP = 10;
-		final int LABEL_WIDTH = 60;
-		final int INPUT_WIDTH = 200;
-		final int CAPTCHA_WIDTH = 78;
-		final int STATION_INPUT_WIDTH = 100;
-		final int DATE_INPUT_WIDTH = 150;
-		final int FILTER_INPUT_WIDTH = 400;
-		
-		int xOffset = LEFT_PADDING; //left padding
-		int yOffset = TOP_PADDING; //top padding
-		
-		//from station
-		JLabel fromStation = new JLabel();
-		fromStation.setText("出发地:");
-		fromStation.setBounds(xOffset,yOffset,LABEL_WIDTH,ROW_HEIGHT);
-		panel.add(fromStation);		
-		xOffset += LABEL_WIDTH;		
-		mFromStationInput = new JTextField();
-		mFromStationInput.setBounds(xOffset,yOffset,STATION_INPUT_WIDTH,ROW_HEIGHT);		
-		mFromStationInput.setText(mUserInfo.getFromStationName());
-		panel.add(mFromStationInput);
-		//to station
-		xOffset += STATION_INPUT_WIDTH+20;	
-		JLabel toStation = new JLabel();
-		toStation.setText("目的地:");
-		toStation.setBounds(xOffset,yOffset,LABEL_WIDTH,ROW_HEIGHT);
-		panel.add(toStation);		
-		xOffset += LABEL_WIDTH;		
-		mToStationInput = new JTextField();
-		mToStationInput.setBounds(xOffset,yOffset,STATION_INPUT_WIDTH,ROW_HEIGHT);
-		mToStationInput.setText(mUserInfo.getToStationName());
-		panel.add(mToStationInput);
-		//date
-		xOffset += STATION_INPUT_WIDTH+20;	
-		JLabel date = new JLabel();
-		date.setText("出发日期:");
-		date.setBounds(xOffset,yOffset,LABEL_WIDTH,ROW_HEIGHT);		
-		panel.add(date);		
-		xOffset += LABEL_WIDTH;	
-		
-		MaskFormatter mf = null;
-		try {
-			mf = new MaskFormatter("####-##-##");
-		} catch (ParseException e1) {
-			e1.printStackTrace();
-		}
-		mDateInput = new JFormattedTextField(mf);
-		mDateInput.setBounds(xOffset,yOffset,DATE_INPUT_WIDTH,ROW_HEIGHT);
-		mDateInput.setColumns(10);
-		if(!TextUtil.isEmpty(mUserInfo.getDate())){
-			mDateInput.setText(mUserInfo.getDate());
-		}
-		panel.add(mDateInput);	
-		
-		//train filter
-		xOffset = LEFT_PADDING; //left padding
-		yOffset += ROW_HEIGHT+10;
-		JLabel trainFilter = new JLabel();
-		trainFilter.setText("车次");
-		trainFilter.setBounds(xOffset,yOffset,LABEL_WIDTH,ROW_HEIGHT);
-		panel.add(trainFilter);
-		xOffset += LABEL_WIDTH;		
-		mTrainFilterInput = new JTextField();
-		mTrainFilterInput.setBounds(xOffset,yOffset,FILTER_INPUT_WIDTH,ROW_HEIGHT);		
-		mTrainFilterInput.setText(TextUtil.getString(mUserInfo.getTrainFitler()));
-		panel.add(mTrainFilterInput);		
-		
-		//qury button
-		xOffset = LEFT_PADDING; //left padding
-		yOffset += ROW_HEIGHT+10;
-		mQueryBtn = new JButton("查询");
-		mQueryBtn.setBounds(xOffset,yOffset,LABEL_WIDTH,ROW_HEIGHT);
-		mQueryBtn.addActionListener(new ActionListener(){
-			public void actionPerformed(ActionEvent evt) {
-				setQueryState(!mQueryStart);
-				if(!mQueryStart){
-					mUiActionListener.onUiAction(UiActionListener.UI_ACTION_TICKET_AUTO_QUERY_END);
-				}else if(checkUserInfo()){
-					mUiActionListener.onUiAction(UiActionListener.UI_ACTION_TICKET_AUTO_QUERY_START);
+	
+	private static final String[] mTrainTypeKeys = {
+		UserInfo.TRAIN_TYPE_FILTER_ALL,
+		UserInfo.TRAIN_TYPE_FILTER_G,
+		UserInfo.TRAIN_TYPE_FILTER_D,
+		UserInfo.TRAIN_TYPE_FILTER_Z,
+		UserInfo.TRAIN_TYPE_FILTER_T,
+		UserInfo.TRAIN_TYPE_FILTER_K,
+		UserInfo.TRAIN_TYPE_FILTER_Q
+	};
+	private static final String[] mTrainTypeNames = {"全部","G-高铁","D-动车","Z-直达","T-特快","K-快车","Q-其他"};
+	private HashMap<String,JCheckBox> mTrainTypeViewCache = new HashMap<String,JCheckBox>(mTrainTypeKeys.length);
+	private ItemListener mTrainTypeItemCheckListener = new ItemListener(){
+		public void itemStateChanged(ItemEvent itemEvent) {
+			JCheckBox child = (JCheckBox)itemEvent.getItem();
+			int state = itemEvent.getStateChange();
+			String key = child.getName();
+			if(state == ItemEvent.SELECTED){				
+				if(key.equals(UserInfo.TRAIN_TYPE_FILTER_ALL)){
+					trainTypeCheckAll(true);
+				}
+			}else{
+				if(key.equals(UserInfo.TRAIN_TYPE_FILTER_ALL)){
+					trainTypeCheckAll(false);
 				}
 			}
-		});
-		parent.add(mQueryBtn);
-	}
-	
-	public void showLog(String... messages){
-		String msg = new String();
-		for (String message : messages) {
-			msg += message+"\n";
 		}
-		mLogLabel.setText(msg);
+	};
+	
+	private void trainTypeCheckAll(boolean check){
+		for(Map.Entry<String, JCheckBox> entry : mTrainTypeViewCache.entrySet()){
+			JCheckBox child = entry.getValue();
+			if(!child.getName().equals(UserInfo.TRAIN_TYPE_FILTER_ALL)){
+				child.setSelected(check);
+			}
+		}
 	}
 	
 	public void setQueryState(boolean queryStart){
-		if(mQueryStart != queryStart){
-			mQueryStart = queryStart;
-			if(mQueryStart){
-				mQueryBtn.setText("停止");
-			}else{
-				mQueryBtn.setText("查询");
-			}
+		mAutoQueryStart = queryStart;
+		if (queryStart) {
+			mQueryBtn.setText("停止");
+		} else {
+			mQueryBtn.setText("查询");
 		}
 	}
 	
@@ -382,6 +559,13 @@ public class FrameMain extends JFrame{
 		if(!checkQueryInfo()){
 			return false;
 		}
+		if(!checkDate()){
+			return false;
+		}
+		
+		checkTrainTypeFilter();
+		checkOptions();
+		
 		mUserInfo.saveUserInfo();
 		resetCookie();
 		return true;
@@ -402,24 +586,23 @@ public class FrameMain extends JFrame{
 		//check from station
 		String fromStation = mFromStationInput.getText();
 		if(TextUtil.isEmpty(fromStation)){
+			mMessageDialog.showMessage("请填写出发地！");
 			return false;
 		}
 		String fromStationCode = TicketHelper.getCityCode(fromStation);
 		if(TextUtil.isEmpty(fromStationCode)){
+			mMessageDialog.showMessage("出发地错误！");
 			return false;
 		}
 		//check to station
 		String toStation = mToStationInput.getText(); 
 		if(TextUtil.isEmpty(toStation)){
+			mMessageDialog.showMessage("请填写目的地！");
 			return false;
 		}
 		String toStationCode = TicketHelper.getCityCode(toStation);
 		if(TextUtil.isEmpty(toStationCode)){
-			return false;
-		}
-		//check date
-		String date = mDateInput.getText();
-		if(TextUtil.isEmpty(date)){
+			mMessageDialog.showMessage("目的地错误！");
 			return false;
 		}
 		
@@ -427,7 +610,6 @@ public class FrameMain extends JFrame{
 		mUserInfo.setFromStationCode(fromStationCode);
 		mUserInfo.setToStationName(toStation);
 		mUserInfo.setToStationCode(toStationCode);
-		mUserInfo.setDate(date);
 		mUserInfo.setTrainFilter(mTrainFilterInput.getText());
 		String[] seatTypes = mSeatInfo.getSelectedSeatTypes();
 		for(int i=0;i<seatTypes.length;i++){
@@ -441,5 +623,83 @@ public class FrameMain extends JFrame{
 	
 	private boolean checkQueryInfo(){
 		return true;
+	}
+	
+	private boolean checkDate(){
+		boolean validDate = true;
+		String date = mDateInput.getText();
+		String[] strs = date.split("[-]");
+		try{
+			int year = Integer.valueOf(strs[0]);
+			int month = Integer.valueOf(strs[1]);
+			int day = Integer.valueOf(strs[2]);
+			Log.i("checkDate,year="+year+",month="+month+",day="+day);
+			Calendar cal=Calendar.getInstance();
+			int curr_year = cal.get(Calendar.YEAR);
+			if(year < curr_year){
+				validDate = false;
+			}else if(month <= 0 || month > 12){
+				validDate = false;
+			}else if(day <= 0 || day > 31){
+				validDate = false;
+			}
+		}catch(NumberFormatException e){
+			validDate = false;
+		}
+		
+		if(!validDate){
+			mMessageDialog.showMessage("日期错误！");
+		}else{
+			mUserInfo.setDate(date);
+		}
+		
+		return validDate;
+	}
+	
+	private void checkTrainTypeFilter(){
+		mTrainTypeFilters.clear();
+		
+		String filter = "";
+		for(Map.Entry<String, JCheckBox> entry : mTrainTypeViewCache.entrySet()){
+			JCheckBox child = entry.getValue();
+			String key = child.getName();
+			if(key.equals(UserInfo.TRAIN_TYPE_FILTER_ALL)){
+				continue;
+			}
+			if(child.isSelected()){
+				if(filter.length() > 0){
+					filter += ",";
+				}
+				filter += key;
+				mTrainTypeFilters.add(key);
+			}
+		}
+		mUserInfo.setTrainTypeFilter(filter);
+	}
+	
+	private void checkOptions(){
+		String queryAuto = mAutoCheckBox.isSelected() ? "true" : "false";
+		mUserInfo.setQueryAuto(queryAuto);
+		String queryMode = mQueryModeQiangCheckBox.isSelected() ? UserInfo.QUERY_MODE_QIANG : UserInfo.QUERY_MODE_JIAN;
+		mUserInfo.setQueryMode(queryMode);
+		String priority = "UserInfo.PRIORITY_TYPE_NONE";
+		if(mPrioritySeatCheckBox.isSelected()){
+			priority = UserInfo.PRIORITY_TYPE_SEAT;
+		}else{
+			priority = UserInfo.PRIORITY_TYPE_TRAIN;
+		}
+		mUserInfo.setPriorityType(priority);
+	}
+		
+	public void showLog(String... messages){
+		String msg = new String();
+		for (String message : messages) {
+			msg += message+"\n";
+		}
+		mLogLabel.setText(msg);
+	}
+	
+	public HashSet<String> getTrainTypeFilter(){
+		return mTrainTypeFilters;
 	}
 }

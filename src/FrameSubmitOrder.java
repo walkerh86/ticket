@@ -31,7 +31,7 @@ public class FrameSubmitOrder extends JFrame{
 	private void initFrame(){
 		setTitle("Ã·Ωª∂©µ•");
 		setResizable(false);
-        setSize(400, 300); 
+        setSize(380, 260); 
         setLocationRelativeTo(null); //center in window
         addWindowListener(new WindowAdapter(){
         	public void windowClosing(WindowEvent e) { 
@@ -54,7 +54,7 @@ public class FrameSubmitOrder extends JFrame{
 		final int ROW_GAP = 15;
 		final int COL_GAP = 10;
 		final int LABEL_WIDTH = 60;
-		final int INPUT_WIDTH = 200;
+		final int INPUT_WIDTH = 180;
 		final int CAPTCHA_WIDTH = 78;
 		final int ARROW_WIDTH = 200;
 		
@@ -124,6 +124,7 @@ public class FrameSubmitOrder extends JFrame{
 		xOffset = LEFT_PADDING; // left padding
 		yOffset += ROW_HEIGHT + ROW_GAP;
 		mLogLabel = new JTextArea();
+		mLogLabel.setBackground(new Color(0,0,0,0));
 		mLogLabel.setBounds(xOffset, yOffset, 300, ROW_HEIGHT * 2);
 		panel.add(mLogLabel);
 	}
