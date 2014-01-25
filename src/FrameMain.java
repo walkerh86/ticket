@@ -27,6 +27,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.border.LineBorder;
 import javax.swing.text.MaskFormatter;
 
 import util.DateHelper;
@@ -52,6 +53,7 @@ public class FrameMain extends JFrame{
 	private JCheckBox mPriorityTrainCheckBox;
 	private JCheckBox mQueryModeQiangCheckBox;
 	private JCheckBox mQueryModeJianCheckBox;
+	private JCheckBox mSubmitWithoutEnoughCheckBox;
 	
 	private boolean mAutoQueryStart;
 	
@@ -72,7 +74,7 @@ public class FrameMain extends JFrame{
 	private void initFrame(){
 		setTitle("主窗口");
 		setResizable(true);
-        setSize(600, 500); 
+        setSize(800, 500); 
         setLocationRelativeTo(null); //center in window
         addWindowListener(new WindowAdapter(){
         	public void windowClosing(WindowEvent e) { 
@@ -219,7 +221,7 @@ public class FrameMain extends JFrame{
 		c.gridx = 1;
 		c.weightx = 1;
 		c.gridwidth = 8;
-		mTrainFilterInput.setText(TextUtil.getString(mUserInfo.getTrainFitler()));
+		mTrainFilterInput.setText(mUserInfo.getTrainFilter());
 		parent.add(mTrainFilterInput,c);	
 	}
 	
@@ -256,6 +258,10 @@ public class FrameMain extends JFrame{
 		mAutoCheckBox.setSelected(mUserInfo.getQueryAuto().equals("true"));
 		optionPanel.add(mAutoCheckBox);		
 		
+		LineBorder lineBorder = new LineBorder(Color.GRAY);
+		JPanel priorityPanel = new JPanel();
+		priorityPanel.setBorder(lineBorder);
+		optionPanel.add(priorityPanel);
 		String prioirtyType = mUserInfo.getPriorityType();
 		mPrioritySeatCheckBox = new JCheckBox("席别优先");
 		mPrioritySeatCheckBox.setName(UserInfo.PRIORITY_TYPE_SEAT);
@@ -263,16 +269,19 @@ public class FrameMain extends JFrame{
 			mPrioritySeatCheckBox.setSelected(true);
 		}
 		mPrioritySeatCheckBox.addItemListener(mPriorityItemListener);		
-		optionPanel.add(mPrioritySeatCheckBox);
+		priorityPanel.add(mPrioritySeatCheckBox);
 		
-		mPriorityTrainCheckBox = new JCheckBox("席别优先");
+		mPriorityTrainCheckBox = new JCheckBox("车次优先");
 		mPriorityTrainCheckBox.setName(UserInfo.PRIORITY_TYPE_TRAIN);
 		if(prioirtyType.equals(UserInfo.PRIORITY_TYPE_TRAIN)){
 			mPriorityTrainCheckBox.setSelected(true);
 		}
 		mPriorityTrainCheckBox.addItemListener(mPriorityItemListener);
-		optionPanel.add(mPriorityTrainCheckBox);
-				
+		priorityPanel.add(mPriorityTrainCheckBox);
+		
+		JPanel modePanel = new JPanel();
+		modePanel.setBorder(lineBorder);
+		optionPanel.add(modePanel);
 		String queryMode = mUserInfo.getQueryMode();
 		mQueryModeQiangCheckBox = new JCheckBox("抢票");
 		mQueryModeQiangCheckBox.setName(UserInfo.QUERY_MODE_QIANG);
@@ -280,7 +289,7 @@ public class FrameMain extends JFrame{
 			mQueryModeQiangCheckBox.setSelected(true);
 		}
 		mQueryModeQiangCheckBox.addItemListener(mQueryModeItemListener);
-		optionPanel.add(mQueryModeQiangCheckBox);
+		modePanel.add(mQueryModeQiangCheckBox);
 		
 		mQueryModeJianCheckBox = new JCheckBox("捡漏");
 		mQueryModeJianCheckBox.setName(UserInfo.QUERY_MODE_JIAN);
@@ -288,7 +297,15 @@ public class FrameMain extends JFrame{
 			mQueryModeJianCheckBox.setSelected(true);
 		}
 		mQueryModeJianCheckBox.addItemListener(mQueryModeItemListener);
-		optionPanel.add(mQueryModeJianCheckBox);
+		modePanel.add(mQueryModeJianCheckBox);
+		
+		mSubmitWithoutEnoughCheckBox = new JCheckBox("余票不足部分提交");
+		mSubmitWithoutEnoughCheckBox.setEnabled(false);
+		mSubmitWithoutEnoughCheckBox.setName(UserInfo.QUERY_MODE_JIAN);
+		if(mUserInfo.getSubmitWithoutEnoughTicket().equals("true")){
+			mSubmitWithoutEnoughCheckBox.setSelected(true);
+		}
+		optionPanel.add(mSubmitWithoutEnoughCheckBox);
 	}
 	private ItemListener mPriorityItemListener = new ItemListener(){
 		public void itemStateChanged(ItemEvent itemEvent) {
@@ -316,10 +333,9 @@ public class FrameMain extends JFrame{
 			}
 		}
 	};
-		
 	private void initPassengerPanel(JPanel parent, GridBagConstraints c){
 		c.gridy = 3;
-		c.gridheight = 2;
+		c.gridheight = 1;
 		
 		JLabel label = new JLabel("乘客：");
 		c.gridx = 0;		
@@ -340,7 +356,7 @@ public class FrameMain extends JFrame{
 		
 		mPassengerPanel = new JPanel();
 		mPassengerPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
-		mPassengerPanel.setPreferredSize(new Dimension(300,60));//cann't change line without this line
+		//mPassengerPanel.setPreferredSize(new Dimension(300,60));//cann't change line without this line
 		c.gridx = 2;		
 		c.weightx = 1;
 		c.gridwidth = 7;
@@ -362,10 +378,10 @@ public class FrameMain extends JFrame{
 		
 	private void initSeatPanel(JPanel parent, GridBagConstraints c){
 		c.gridy = 5;
-		c.gridheight = 2;
+		c.gridheight = 1;
 		
 		mSeatInfo = new SeatInfo();
-		mSeatInfo.selectMultiSeatType(mUserInfo.getSeatFitler());
+		mSeatInfo.selectMultiSeatType(mUserInfo.getSeatFitlerArray());
 		
 		JLabel label = new JLabel("优先席别：");
 		c.gridx = 0;
@@ -386,6 +402,7 @@ public class FrameMain extends JFrame{
 		
 		mSeatPanel = new JPanel();		
 		mSeatPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
+		//mPassengerPanel.setPreferredSize(new Dimension(300,60));//cann't change line without this line
 		c.gridx = 2;
 		c.weightx = 1;
 		c.gridwidth = 7;
@@ -397,6 +414,8 @@ public class FrameMain extends JFrame{
 				checkBox.setSelected(true);
 				checkBox.addItemListener(mSeatItemListener);
 				mSeatPanel.add(checkBox);
+				Log.i("initSeatPanel,key="+checkBox.getName());
+				mSeatJCheckBoxCache.put(checkBox.getName(), checkBox);
 			}
 		}
 	}
@@ -408,6 +427,9 @@ public class FrameMain extends JFrame{
 			if(state != ItemEvent.SELECTED){
 				String key = child.getName();
 				mSeatInfo.unSelectSingleSeatType(key);
+				if(mFrameSeatList != null){
+					mFrameSeatList.unselectSeatType(key);
+				}
 				mSeatPanel.remove(child);
 				mSeatPanel.validate();
 				mSeatPanel.repaint();
@@ -425,18 +447,21 @@ public class FrameMain extends JFrame{
 					Log.i("onItemChecked,checked="+checked);
 					String key = item.getName();
 					JCheckBox child = null;
+					Log.i("showSeatList,key="+key);
 					if(mSeatJCheckBoxCache.containsKey(key)){
 						child = mSeatJCheckBoxCache.get(key);
 					}
 					if(checked){
 						if(child == null){
+							Log.i("showSeatList,new child");
 							child = new JCheckBox();
 							child.setName(key);
-							child.setText(item.getText());
-							child.setSelected(true);
+							child.setText(item.getText());							
 							child.addItemListener(mSeatItemListener);
 							mSeatJCheckBoxCache.put(key, child);
 						}
+						child.setSelected(true);
+						
 						mSeatInfo.selectSingleSeatType(key);
 						mSeatPanel.add(child);
 					}else{
@@ -445,8 +470,11 @@ public class FrameMain extends JFrame{
 					}
 					mSeatPanel.validate();
 					mSeatPanel.repaint();
+					mRootPanel.validate();
+					mRootPanel.repaint();
 				}
 			});
+			mFrameSeatList.initSelectedSeats(mUserInfo.getSeatFitlerArray());
 		}
 		mFrameSeatList.setVisible(true);
 	}
@@ -507,7 +535,7 @@ public class FrameMain extends JFrame{
 	}
 	
 	private static final String[] mTrainTypeKeys = {
-		UserInfo.TRAIN_TYPE_FILTER_ALL,
+		//UserInfo.TRAIN_TYPE_FILTER_ALL,
 		UserInfo.TRAIN_TYPE_FILTER_G,
 		UserInfo.TRAIN_TYPE_FILTER_D,
 		UserInfo.TRAIN_TYPE_FILTER_Z,
@@ -515,7 +543,8 @@ public class FrameMain extends JFrame{
 		UserInfo.TRAIN_TYPE_FILTER_K,
 		UserInfo.TRAIN_TYPE_FILTER_Q
 	};
-	private static final String[] mTrainTypeNames = {"全部","G-高铁","D-动车","Z-直达","T-特快","K-快车","Q-其他"};
+	private static final String[] mTrainTypeNames = {/*"全部",*/"G-高铁","D-动车","Z-直达","T-特快","K-快车","Q-其他"};
+	private static final int mTrainTypeMax = mTrainTypeNames.length-1;
 	private HashMap<String,JCheckBox> mTrainTypeViewCache = new HashMap<String,JCheckBox>(mTrainTypeKeys.length);
 	private ItemListener mTrainTypeItemCheckListener = new ItemListener(){
 		public void itemStateChanged(ItemEvent itemEvent) {
@@ -525,10 +554,22 @@ public class FrameMain extends JFrame{
 			if(state == ItemEvent.SELECTED){				
 				if(key.equals(UserInfo.TRAIN_TYPE_FILTER_ALL)){
 					trainTypeCheckAll(true);
+				}else{
+					mTrainTypeFilters.add(key);
 				}
 			}else{
 				if(key.equals(UserInfo.TRAIN_TYPE_FILTER_ALL)){
 					trainTypeCheckAll(false);
+				}else{
+					mTrainTypeFilters.remove(key);
+				}
+			}
+			JCheckBox allChild = mTrainTypeViewCache.get(UserInfo.TRAIN_TYPE_FILTER_ALL);
+			if(allChild != null){
+				if(mTrainTypeFilters.size() == mTrainTypeMax){
+					allChild.setSelected(true);
+				}else{
+					allChild.setSelected(false);
 				}
 			}
 		}
@@ -537,8 +578,14 @@ public class FrameMain extends JFrame{
 	private void trainTypeCheckAll(boolean check){
 		for(Map.Entry<String, JCheckBox> entry : mTrainTypeViewCache.entrySet()){
 			JCheckBox child = entry.getValue();
-			if(!child.getName().equals(UserInfo.TRAIN_TYPE_FILTER_ALL)){
+			String key = child.getName();
+			if(!key.equals(UserInfo.TRAIN_TYPE_FILTER_ALL)){
 				child.setSelected(check);
+				if(check){
+					mTrainTypeFilters.add(key);
+				}else{
+					mTrainTypeFilters.remove(key);
+				}
 			}
 		}
 	}
@@ -556,15 +603,16 @@ public class FrameMain extends JFrame{
 		if(!checkTicketInfo()){
 			return false;
 		}
-		if(!checkQueryInfo()){
-			return false;
-		}
 		if(!checkDate()){
 			return false;
 		}
-		
+		if(mAutoCheckBox.isSelected()){			
+			if(!checkFilterInfo()){
+				return false;
+			}			
+		}
 		checkTrainTypeFilter();
-		checkOptions();
+		checkOptions();		
 		
 		mUserInfo.saveUserInfo();
 		resetCookie();
@@ -582,7 +630,7 @@ public class FrameMain extends JFrame{
 		cookieManager.add(cookies);
 	}
 	
-	private boolean checkTicketInfo(){
+	private boolean checkTicketInfo(){		
 		//check from station
 		String fromStation = mFromStationInput.getText();
 		if(TextUtil.isEmpty(fromStation)){
@@ -609,19 +657,22 @@ public class FrameMain extends JFrame{
 		mUserInfo.setFromStationName(fromStation);
 		mUserInfo.setFromStationCode(fromStationCode);
 		mUserInfo.setToStationName(toStation);
-		mUserInfo.setToStationCode(toStationCode);
-		mUserInfo.setTrainFilter(mTrainFilterInput.getText());
-		String[] seatTypes = mSeatInfo.getSelectedSeatTypes();
-		for(int i=0;i<seatTypes.length;i++){
-			Log.i("checkTicketInfo,seatTypes="+seatTypes[i]);
-		}
-		mUserInfo.setSeatFilter(mSeatInfo.getSelectedSeatTypes());
+		mUserInfo.setToStationCode(toStationCode);		
 		mUserInfo.setPassengers(mPassengerManager.getSelectedPassengersString());
 		
 		return true;
 	}
 	
-	private boolean checkQueryInfo(){
+	private boolean checkFilterInfo(){
+		//String[] seatTypes = mSeatInfo.getSelectedSeatTypes();
+		//if(seatTypes != null && seatTypes.length > 0){
+			mUserInfo.setSeatFilterByArray(mSeatInfo.getSelectedSeatTypes());
+		//}
+		String trainFilter = mTrainFilterInput.getText();
+		//if(!TextUtil.isEmpty(trainFilter)){
+			mUserInfo.setTrainFilter(trainFilter);
+		//}
+			Log.i("checkFilterInfo,trainFilter="+trainFilter);
 		return true;
 	}
 	
@@ -689,6 +740,7 @@ public class FrameMain extends JFrame{
 			priority = UserInfo.PRIORITY_TYPE_TRAIN;
 		}
 		mUserInfo.setPriorityType(priority);
+		mUserInfo.setSubmitWithoutEnoughTicket(mSubmitWithoutEnoughCheckBox.isSelected() ? "true" : "false");
 	}
 		
 	public void showLog(String... messages){

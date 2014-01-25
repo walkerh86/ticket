@@ -12,19 +12,30 @@ import util.Log;
 
 public class SeatInfo {	
 	public static final int SEAT_TYPE_NUM = 12;
+	
+	public static final String KEY_SW = "sw";
+	public static final String KEY_TZ = "tz";
+	public static final String KEY_ZY = "zy";
+	public static final String KEY_ZE = "ze";
+	public static final String KEY_GR = "gr";
+	public static final String KEY_RW = "rw";
+	public static final String KEY_YW = "yw";
+	public static final String KEY_RZ = "rz";
+	public static final String KEY_YZ = "yz";
+	public static final String KEY_WZ = "wz";
 
 	private static final HashMap<String,SeatTypeInfo> mAllSeatTypeMap = new LinkedHashMap<String,SeatTypeInfo>(SEAT_TYPE_NUM);
 	static{
-		mAllSeatTypeMap.put("sw",new SeatTypeInfo("swz_num","9","商务座"));
-		mAllSeatTypeMap.put("tz",new SeatTypeInfo("tz_num","P","特等座"));
-		mAllSeatTypeMap.put("zy",new SeatTypeInfo("zy_num","M","一等座"));
-		mAllSeatTypeMap.put("ze",new SeatTypeInfo("ze_num","O","二等座"));
-		mAllSeatTypeMap.put("gr",new SeatTypeInfo("gr_num","5","高级软卧"));
-		mAllSeatTypeMap.put("rw",new SeatTypeInfo("rw_num","4","软卧"));
-		mAllSeatTypeMap.put("yw",new SeatTypeInfo("yw_num","3","硬卧"));
-		mAllSeatTypeMap.put("rz",new SeatTypeInfo("rz_num","2","软座"));
-		mAllSeatTypeMap.put("yz",new SeatTypeInfo("yz_num","1","硬座"));
-		mAllSeatTypeMap.put("wz",new SeatTypeInfo("wz_num","1","无座"));
+		mAllSeatTypeMap.put(KEY_SW,new SeatTypeInfo("swz_num","9","商务座"));
+		mAllSeatTypeMap.put(KEY_TZ,new SeatTypeInfo("tz_num","P","特等座"));
+		mAllSeatTypeMap.put(KEY_ZY,new SeatTypeInfo("zy_num","M","一等座"));
+		mAllSeatTypeMap.put(KEY_ZE,new SeatTypeInfo("ze_num","O","二等座"));
+		mAllSeatTypeMap.put(KEY_GR,new SeatTypeInfo("gr_num","5","高级软卧"));
+		mAllSeatTypeMap.put(KEY_RW,new SeatTypeInfo("rw_num","4","软卧"));
+		mAllSeatTypeMap.put(KEY_YW,new SeatTypeInfo("yw_num","3","硬卧"));
+		mAllSeatTypeMap.put(KEY_RZ,new SeatTypeInfo("rz_num","2","软座"));
+		mAllSeatTypeMap.put(KEY_YZ,new SeatTypeInfo("yz_num","1","硬座"));
+		mAllSeatTypeMap.put(KEY_WZ,new SeatTypeInfo("wz_num","1","无座"));
 	}
 	
 	private LinkedHashSet<String> mSelectedSeatType;
@@ -103,24 +114,26 @@ public class SeatInfo {
 			SeatTypeInfo seatType = mAllSeatTypeMap.get(key);
 			checkBoxs[index] = new JCheckBox();
 			checkBoxs[index].setText(seatType.mName);
-			checkBoxs[index].setName(seatType.mCode);
+			checkBoxs[index].setName(key);
 			index++;
 		}
 		return checkBoxs;
 	}
 	
-	public static JCheckBox[] getAllSeatTypeCheckBoxs(){		
-		JCheckBox[] checkBoxs = new JCheckBox[mAllSeatTypeMap.size()];
-		Iterator<Entry<String, SeatTypeInfo>> iter = mAllSeatTypeMap.entrySet().iterator();
-		int index = 0;
-		while (iter.hasNext()) {
-			Map.Entry<String,SeatTypeInfo> entry = (Map.Entry<String,SeatTypeInfo>)iter.next();
-			SeatTypeInfo seatType = (SeatTypeInfo)entry.getValue();
-			checkBoxs[index] = new JCheckBox();
-			checkBoxs[index].setText(seatType.mName);
-			checkBoxs[index].setName(entry.getKey());
-			index++;
+	public static HashMap<String,SeatTypeInfo> getAllSeatTypeInfo(){
+		return mAllSeatTypeMap;
+	}
+	
+	private static final int ENOUGH_SEAT_NUM = 100;
+	public static int checkSeatNum(String seatNum){
+		int num = 0;
+		if(seatNum.equals("有")){
+			num = ENOUGH_SEAT_NUM;
+		}else if(seatNum.equals("无") || seatNum.equals("--") || seatNum.equals("*")){
+			num = 0;
+		}else{
+			num = Integer.valueOf(seatNum);
 		}
-		return checkBoxs;
+		return num;
 	}
 }

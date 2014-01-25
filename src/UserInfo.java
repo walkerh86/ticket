@@ -27,7 +27,9 @@ public class UserInfo {
 	private static final String KEY_PRIORITY_TYPE="priority_type";
 	private static final String KEY_AUTO_QUERY="auto_query";
 	private static final String KEY_QUERY_MODE="query_mode";
+	private static final String KEY_SUBMIT_WITHOUT_ENOUGH_TICKET="submit_without_enough_ticket";
 	public static final String KEY_PASSENGERS = "passengers";
+	
 	
 	public static final String QUERY_MODE_QIANG = "qiang";
 	public static final String QUERY_MODE_JIAN = "jian";
@@ -57,13 +59,14 @@ public class UserInfo {
 	private String mDate;
 	private String mSeatTypeCode;
 	//filter info	
-	private String[] mSeatFilter;
-	private String[] mTrainFilter;	
-	private String mTrainTypeFilter;
+	private String mSeatFilter="";
+	private String mTrainFilter="";	
+	private String mTrainTypeFilter="";
 	//
 	private String mPriorityType = PRIORITY_TYPE_NONE;
 	private String mQueryAuto = "false";
 	private String mQueryMode = QUERY_MODE_QIANG;
+	private String mSubmitWithoutEnough = "false";
 	//passenger
 	private String mPassengers;
 	//
@@ -146,35 +149,52 @@ public class UserInfo {
 		return mSeatTypeCode;
 	}
 	
-	public String[] getSeatFitler(){
+	public String[] getSeatFitlerArray(){
+		if(TextUtil.isEmpty(mSeatFilter)){
+			return null;
+		}
+		String[] filters = mSeatFilter.split("[,;]");
+		return filters;
+	}
+	
+	public String getSeatFitler(){
 		return mSeatFilter;
 	}
 		
-	public void setSeatFilter(String[] filter){
+	public void setSeatFilter(String filter){
 		mSeatFilter = filter;
 	}
 	
-	public void setSeatFilter(String filter){
-		if(filter == null || filter.length() == 0){
-			return;
+	public void setSeatFilterByArray(String[] filters){
+		if(filters == null || filters.length == 0){
+			mSeatFilter = "";
+		}else{
+			mSeatFilter = TextUtil.getString(filters);
 		}
-		mSeatFilter = filter.split("[,]");
-		Log.i("setSeatFilter,len="+mSeatFilter.length+",filter="+filter);
+	}
+		
+	public String[] getTrainFitlerArray(){
+		if(TextUtil.isEmpty(mTrainFilter)){
+			return null;
+		}
+		String[] filters = mTrainFilter.split("[,;]");
+		return filters;
 	}
 	
-	public String[] getTrainFitler(){
+	public String getTrainFilter(){
 		return mTrainFilter;
 	}
 		
-	public void setTrainFilter(String[] filter){
+	public void setTrainFilter(String filter){
 		mTrainFilter = filter;
 	}
 	
-	public void setTrainFilter(String filter){
-		if(filter == null || filter.length() == 0){
-			return;
+	public void setTrainFilterByArray(String[] filters){
+		if(filters == null || filters.length == 0){
+			mTrainFilter = "";
+		}else{
+			mTrainFilter = TextUtil.getString(filters);
 		}
-		mTrainFilter = filter.split("[,;]");
 	}
 	
 	public String getPriorityType(){
@@ -215,6 +235,14 @@ public class UserInfo {
 	
 	public void setQueryMode(String mode){
 		mQueryMode = mode;
+	}
+	
+	public String getSubmitWithoutEnoughTicket(){
+		return mSubmitWithoutEnough;
+	}
+	
+	public void setSubmitWithoutEnoughTicket(String submit){
+		mSubmitWithoutEnough = submit;
 	}
 	
 	public void loadUserInfo(){
@@ -278,6 +306,10 @@ public class UserInfo {
 			if(value != null){
 				setQueryMode(value);
 			}
+			value = mProperties.getProperty(KEY_SUBMIT_WITHOUT_ENOUGH_TICKET);
+			if(value != null){
+				setSubmitWithoutEnoughTicket(value);
+			}			
 		} catch (IOException e) {
 			Log.i("loadUserInfo,e="+e);
 		}
@@ -302,10 +334,14 @@ public class UserInfo {
 			mProperties.setProperty(KEY_DATE, mDate);
 		}
 		if(mSeatFilter != null){
-			mProperties.setProperty(KEY_SEAT_FILTER, getString(mSeatFilter));
+			mProperties.setProperty(KEY_SEAT_FILTER, mSeatFilter);
+		}else{
+			mProperties.remove(KEY_SEAT_FILTER);
 		}
 		if(mTrainFilter != null){
-			mProperties.setProperty(KEY_TRAIN_FILTER, getString(mTrainFilter));
+			mProperties.setProperty(KEY_TRAIN_FILTER, mTrainFilter);
+		}else{
+			mProperties.remove(KEY_TRAIN_FILTER);
 		}
 		if(mPassengers != null){
 			mProperties.setProperty(KEY_PASSENGERS, mPassengers);
@@ -322,6 +358,9 @@ public class UserInfo {
 		if(mQueryMode != null){
 			mProperties.setProperty(KEY_QUERY_MODE, mQueryMode);
 		}
+		if(mSubmitWithoutEnough != null){
+			mProperties.setProperty(KEY_SUBMIT_WITHOUT_ENOUGH_TICKET, mSubmitWithoutEnough);
+		}
 		
 		try{
 			FileOutputStream out = new FileOutputStream(new File(USER_PROPERTY_URL));
@@ -332,21 +371,5 @@ public class UserInfo {
 		}catch(IOException e){
 			Log.i("saveUserInfo,e="+e);
 		}
-	}	
-	
-	private static String getString(String[] strs){
-		if(strs.length == 0){
-			return null;
-		}
-		
-		String result = "";
-		for(int i=0;i<strs.length;i++){
-			if(result.length() > 0){
-				result += ",";
-			}
-			result += strs[i];
-		}
-		
-		return result;
 	}
 }

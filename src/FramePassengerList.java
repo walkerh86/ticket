@@ -63,7 +63,7 @@ public class FramePassengerList extends JFrame implements HttpResponseHandler{
 			public void OnRemotePassengersGetDone(HashMap<String,Passenger> passengers) {
 				mSaveRemoteCheckBox.setEnabled(true);
 				
-				addPassengerView(passengers,mRemoteListPanel);
+				addPassengerView(passengers,mRemoteListPanel);				
 			}
 			@Override
 			public void OnLocalPassengersGetDone(HashMap<String,Passenger> passengers) {
@@ -71,13 +71,14 @@ public class FramePassengerList extends JFrame implements HttpResponseHandler{
 			}
 		});
 	}
-	
+		
 	private void addPassengerView(HashMap<String,Passenger> passengers, JPanel panel){
 		int count = passengers.size();
 		if(passengers == null || count == 0){
 			return;
 		}
 
+		HashMap<String,Passenger> selectedPassengers = mPassengerManager.getSelectedPassengers();
 		for(Map.Entry<String,Passenger> entry : passengers.entrySet()){
 			String key = entry.getValue().getIdNo();
 			String name = entry.getValue().getName();
@@ -94,6 +95,9 @@ public class FramePassengerList extends JFrame implements HttpResponseHandler{
 			});
 			mPassengerViewCache.put(key, child);
 			panel.add(child);
+			if(selectedPassengers.containsKey(key)){
+				child.setSelected(true);
+			}
 		}
 		panel.validate();
 		panel.repaint();

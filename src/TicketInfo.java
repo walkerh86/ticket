@@ -22,6 +22,7 @@ public class TicketInfo {
 	//from convert
 	public String mSeatTypeCode;
 	public String mSeatTypeName;
+	public int mSeatTicketNum;
 	/*
 	public static final HashMap<String,String> mSeatCodeMap = new HashMap<String,String>();
 	static{
@@ -38,16 +39,10 @@ public class TicketInfo {
 		mSeatCodeMap.put("qt_num","ÆäËû");
 	}
 	*/
-	public static TicketInfo getTicketInfoFromJSONObject(JSONObject jObj){
+	public static TicketInfo getTicketInfoFromJSONObject(JSONObject jObj,String seatType){
 		TicketInfo ticketInfo = new TicketInfo();
 		ticketInfo.mSecretStr = jObj.getString(TicketInfoConstants.KEY_SECRET_STR);
-		//Log.i("getTicketInfoFromJSONObject,mSecretStr=");
-		//Log.i(ticketInfo.mSecretStr);
-		try{
-		Log.i(URLEncoder.encode(ticketInfo.mSecretStr, "UTF-8"));
-		}catch( UnsupportedEncodingException e){
-			Log.i("getTicketInfoFromJSONObject,e="+e);
-		}
+		
 		JSONObject queryLeftNewDTO = jObj.getJSONObject("queryLeftNewDTO");
 		ticketInfo.mStationTrainCode = queryLeftNewDTO.getString(TicketInfoConstants.KEY_STATION_TRAIN_CODE);
 		ticketInfo.mFromStationTelecode = queryLeftNewDTO.getString(TicketInfoConstants.KEY_FROM_STATION_TELECODE);
@@ -57,18 +52,16 @@ public class TicketInfo {
 		ticketInfo.mToStationName = queryLeftNewDTO.getString(TicketInfoConstants.KEY_TO_STATION_NAME);
 		ticketInfo.mLocationCode = queryLeftNewDTO.getString(TicketInfoConstants.KEY_LOCATION_CODE);
 		ticketInfo.mYpInfo = queryLeftNewDTO.getString(TicketInfoConstants.KEY_YP_INFO);
+		
+		ticketInfo.mSeatTypeName = SeatInfo.getSeatName(seatType);
+		ticketInfo.mSeatTypeCode = SeatInfo.getSeatCode(seatType);
+		String seatTicketNumStr = queryLeftNewDTO.getString(SeatInfo.getSeatNumKey(seatType));
+		ticketInfo.mSeatTicketNum = Integer.valueOf(SeatInfo.checkSeatNum(seatTicketNumStr));
+				
 		return ticketInfo;
 	}
 	
-	public void setSeatType(String type){
-		mSeatTypeName = SeatInfo.getSeatName(type);
-		mSeatTypeCode = SeatInfo.getSeatCode(type);//mSeatCodeMap.get(type);
-		Log.i("setSeatType,type="+type+",mSeatTypeCode="+mSeatTypeCode+",name="+mSeatTypeName);
-	}
-	
 	public String toString(){
-		return mStationTrainCode+","+mTrainNo+","+mFromStationName+","+mToStationName+","+mLocationCode
-				+","+mFromStationTelecode+","+mToStationTelecode+"\n"
-				+mYpInfo+"\n"+mSecretStr;
+		return mStationTrainCode+","+mFromStationName+","+mToStationName+","+mSeatTypeName;
 	}
 }
