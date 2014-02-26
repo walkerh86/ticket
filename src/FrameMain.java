@@ -17,6 +17,7 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 
 import javax.swing.JButton;
@@ -55,12 +56,14 @@ public class FrameMain extends JFrame{
 	private JCheckBox mQueryModeJianCheckBox;
 	private JCheckBox mSubmitWithoutEnoughCheckBox;
 	
+	private JCheckBox mConsiderOtherTrains;
+	
 	private boolean mAutoQueryStart;
 	
 	private SeatInfo mSeatInfo;
 	private PassengerManager mPassengerManager;
 	
-	private HashSet<String> mTrainTypeFilters = new HashSet<String>();
+	private HashSet<String> mTrainTypeFilters = new LinkedHashSet<String>();
 	
 	private MessageDialog mMessageDialog = new MessageDialog();
 	
@@ -212,7 +215,7 @@ public class FrameMain extends JFrame{
 		c.gridheight = 1;
 		
 		JLabel trainFilter = new JLabel();
-		trainFilter.setText("限制车次：");
+		trainFilter.setText("优先车次：");
 		c.gridx = 0;
 		c.weightx = 0;
 		c.gridwidth = 1;
@@ -220,9 +223,14 @@ public class FrameMain extends JFrame{
 		mTrainFilterInput = new JTextField();
 		c.gridx = 1;
 		c.weightx = 1;
-		c.gridwidth = 8;
+		c.gridwidth = 6;
 		mTrainFilterInput.setText(mUserInfo.getTrainFilter());
-		parent.add(mTrainFilterInput,c);	
+		parent.add(mTrainFilterInput,c);
+		mConsiderOtherTrains = new JCheckBox("考虑其他车次？");
+		c.gridx = 8;
+		c.weightx = 0;
+		c.gridwidth = 1;
+		parent.add(mConsiderOtherTrains,c);
 	}
 	
 	private void initQueryOptionPanel(JPanel parent, GridBagConstraints c){
@@ -606,11 +614,11 @@ public class FrameMain extends JFrame{
 		if(!checkDate()){
 			return false;
 		}
-		if(mAutoCheckBox.isSelected()){			
+		//if(mAutoCheckBox.isSelected()){			
 			if(!checkFilterInfo()){
 				return false;
 			}			
-		}
+		//}
 		checkTrainTypeFilter();
 		checkOptions();		
 		
@@ -673,6 +681,9 @@ public class FrameMain extends JFrame{
 			mUserInfo.setTrainFilter(trainFilter);
 		//}
 			Log.i("checkFilterInfo,trainFilter="+trainFilter);
+			
+		String considerOther = mConsiderOtherTrains.isSelected() ? "true" : "false";				
+		mUserInfo.setConsiderOtherTrain(considerOther);
 		return true;
 	}
 	

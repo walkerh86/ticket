@@ -30,6 +30,9 @@ public class UserInfo {
 	private static final String KEY_SUBMIT_WITHOUT_ENOUGH_TICKET="submit_without_enough_ticket";
 	public static final String KEY_PASSENGERS = "passengers";
 	
+	private static final String KEY_CONSIDER_OTHER_TRAIN="consider_other_train";
+	private String mConsiderOtherTrain = "false";
+	
 	
 	public static final String QUERY_MODE_QIANG = "qiang";
 	public static final String QUERY_MODE_JIAN = "jian";
@@ -245,6 +248,14 @@ public class UserInfo {
 		mSubmitWithoutEnough = submit;
 	}
 	
+	public String getConsiderOtherTrain(){
+		return mConsiderOtherTrain;
+	}
+	
+	public void setConsiderOtherTrain(String consider){
+		mConsiderOtherTrain = consider;
+	}
+	
 	public void loadUserInfo(){
 		try {
 			InputStream is = new FileInputStream(new File(USER_PROPERTY_URL));
@@ -310,6 +321,10 @@ public class UserInfo {
 			if(value != null){
 				setSubmitWithoutEnoughTicket(value);
 			}			
+			value = mProperties.getProperty(KEY_CONSIDER_OTHER_TRAIN);
+			if(value != null){
+				setConsiderOtherTrain(value);
+			}
 		} catch (IOException e) {
 			Log.i("loadUserInfo,e="+e);
 		}
@@ -360,6 +375,9 @@ public class UserInfo {
 		}
 		if(mSubmitWithoutEnough != null){
 			mProperties.setProperty(KEY_SUBMIT_WITHOUT_ENOUGH_TICKET, mSubmitWithoutEnough);
+		}
+		if(mConsiderOtherTrain != null){
+			mProperties.setProperty(KEY_CONSIDER_OTHER_TRAIN, mConsiderOtherTrain);
 		}
 		
 		try{

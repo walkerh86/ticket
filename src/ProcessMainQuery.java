@@ -1,6 +1,8 @@
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.BlockingQueue;
@@ -100,7 +102,7 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 	    	stepQueryLeft();
 	    }
 	}
-	private TimerQueryTask mTimerQueryTask = new TimerQueryTask();
+	//private TimerQueryTask mTimerQueryTask = new TimerQueryTask();
 	Timer mTimer = new Timer();
 	
 	public void parseTicketQuery(String str){
@@ -108,12 +110,21 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 		Log.i("parseTicketQuery,str="+str);
 		
 		JSONObject jObj = JSONObject.fromObject(str);
-		String jString = jObj.getString("data");
+		String jString = null;
+		try{
+			jString = jObj.getString("data");
+		}catch(net.sf.json.JSONException e){
+			String errMsg = jObj.getString("messages");
+			mFrameMain.showLog(errMsg);
+			return;
+		}
 		
 		JSONArray trainList = JSONArray.fromObject(jString);
 		JSONObject train = getBestTrain(trainList);
-		if(mAutoQueryStart && train != null && mBestSeatType != null){
-			TicketInfo tickInfo = TicketInfo.getTicketInfoFromJSONObject(train,mBestSeatType);
+		if(mAutoQueryStart && train != null){
+			String bestSeat = mSeatFilter.getTrainBestSeat(train);
+			Log.i("parseTicketQuery,bestseatType="+bestSeat);
+			TicketInfo tickInfo = TicketInfo.getTicketInfoFromJSONObject(train,bestSeat);
 			Log.i("parseTicketQuery,ticketInfo="+tickInfo.toString());
 			submitOrder(tickInfo);
 			
@@ -123,9 +134,9 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 			//stepQueryLeft();
 			mTimer.schedule(new TimerQueryTask(), 50);
 		}
-		Log.i("===================================================================");
-		Log.i("parseTicketQuery,bestTrain="+train);
-		Log.i("parseTicketQuery,bestseatType="+mBestSeatType);
+		Log.i("===================================================================");		
+		Log.i("parseTicketQuery,bestTrain="+train);	
+		Log.i("parseTicketQuery,bestSeat="+mSeatFilter.getTrainBestSeat(train));
 		Log.i("parseTicketQuery end");
 	}
 	
@@ -135,31 +146,29 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 		mProcessSubmitOrder.startSubmitOrderSequence(tickInfo);
 	}
 
-	private String mBestSeatType = null;
-	private static final String[] mDefaultSeatFilter = {
-		SeatInfo.KEY_ZE,
-		SeatInfo.KEY_YW,
-		SeatInfo.KEY_YZ,
-		
-		SeatInfo.KEY_RW,
-		SeatInfo.KEY_RZ,
-		SeatInfo.KEY_GR,
-		
-		SeatInfo.KEY_ZY,
-		//SeatInfo.KEY_TZ,
-		//SeatInfo.KEY_SW,
-		SeatInfo.KEY_WZ
-	};
+	private static final String mDefaultSeatFilter = 
+			SeatInfo.KEY_ZE
+			+","+SeatInfo.KEY_YW
+			+","+SeatInfo.KEY_YZ
+			+","+SeatInfo.KEY_RW
+			+","+SeatInfo.KEY_RZ
+			+","+SeatInfo.KEY_GR
+			+","+SeatInfo.KEY_ZY
+			+","+SeatInfo.KEY_WZ;
+	
 	private JSONObject getBestTrain(JSONArray trainList){
 		JSONObject bestTrain = null;
-		String[] seatFilter = mUserInfo.getSeatFitlerArray();
-		if(seatFilter == null || seatFilter.length == 0){			
-			seatFilter = mDefaultSeatFilter;
-		}
-		String[] trainFilter = mUserInfo.getTrainFitlerArray();
+		String seatFilter = mUserInfo.getSeatFitler();
+		if(seatFilter == null || seatFilter.length() == 0){
+			mSeatFilter.setSeatFilters(mDefaultSeatFilter);
+		}else{
+			mSeatFilter.setSeatFilters(mUserInfo.getSeatFitler());
+		}		
+		mTrainCodeFilter.setTrainCodeFilters(mUserInfo.getTrainFilter(),mUserInfo.getConsiderOtherTrain());		
+		
 		String priorityType = mUserInfo.getPriorityType();
-		int seatWeightMax = (seatFilter != null) ? seatFilter.length : 0;
-		int trainWeightMax = (trainFilter != null) ? trainFilter.length : 0;
+		int seatWeightMax = mSeatFilter.getMaxWeight();
+		int trainWeightMax = mTrainCodeFilter.getMaxWeight();
 		int weightMax = 0;
 		int count = trainList.size();
 		JSONObject train = null;
@@ -167,9 +176,8 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 		int seatWeight = 0;
 		int finalWeight = 0;
 		int bestWeight = 0;
-		int bestSeatWeight = 0;
 				
-		if(trainFilter != null){
+		if(mTrainCodeFilter.applayFilter()){
 			weightMax = seatWeightMax*trainWeightMax;
 			if(priorityType.equals(UserInfo.PRIORITY_TYPE_SEAT)){
 				weightMax += seatWeightMax;
@@ -183,13 +191,22 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 		for(int i=0;i<count;i++){
 			train = trainList.getJSONObject(i).getJSONObject("queryLeftNewDTO");
 			String trainCode = train.getString(TicketInfoConstants.KEY_STATION_TRAIN_CODE);
-			if(checkTrainCodeFilter(trainCode)){
+			
+			logStr += train.getString(TicketInfoConstants.KEY_STATION_TRAIN_CODE)
+					+",  "+SeatInfo.getSeatName("zy")+"="+train.getString(TicketInfoConstants.KEY_ZY_NUM)
+					+",  "+SeatInfo.getSeatName("ze")+"="+train.getString(TicketInfoConstants.KEY_ZE_NUM)
+					+",  "+SeatInfo.getSeatName("rw")+"="+train.getString(TicketInfoConstants.KEY_RW_NUM)
+					+",  "+SeatInfo.getSeatName("yw")+"="+train.getString(TicketInfoConstants.KEY_YW_NUM)
+					+",  "+SeatInfo.getSeatName("rz")+"="+train.getString(TicketInfoConstants.KEY_RZ_NUM)
+					+",  "+SeatInfo.getSeatName("yz")+"="+train.getString(TicketInfoConstants.KEY_YZ_NUM)
+					+"\n";
+			if(checkFilter(train)){
 				continue;
 			}
 			
-			if(trainFilter != null){
-				trainWeight = getTrainWeightValue(train,trainFilter);
-				seatWeight = getSeatWeightValue(train,seatFilter);	
+			if(mTrainCodeFilter.applayFilter()){
+				trainWeight = mTrainCodeFilter.getTrainCodeWeight(trainCode);
+				seatWeight = mSeatFilter.getSeatWeight(trainCode);//getSeatWeightValue(train,seatFilter);	
 				if(priorityType.equals(UserInfo.PRIORITY_TYPE_SEAT)){
 					finalWeight = (seatWeight-1)*trainWeightMax + seatWeight+trainWeight;
 				}else if(priorityType.equals(UserInfo.PRIORITY_TYPE_TRAIN)){
@@ -198,11 +215,11 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 					finalWeight = seatWeight*trainWeight;
 				}
 			}else{
-				seatWeight = getSeatWeightValue(train,seatFilter);	
+				seatWeight = mSeatFilter.getSeatWeight(trainCode);//getSeatWeightValue(train,seatFilter);	
 				finalWeight = seatWeight;
 			}
 			
-			if(!mAutoQueryStart || finalWeight > 0){
+			if(false){//(!mAutoQueryStart || finalWeight > 0){
 				logStr += train.getString(TicketInfoConstants.KEY_STATION_TRAIN_CODE)
 						+",  "+SeatInfo.getSeatName("zy")+"="+train.getString(TicketInfoConstants.KEY_ZY_NUM)
 						+",  "+SeatInfo.getSeatName("ze")+"="+train.getString(TicketInfoConstants.KEY_ZE_NUM)
@@ -216,8 +233,7 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 			}
 			if(finalWeight > bestWeight){
 				bestWeight = finalWeight;
-				bestTrain = trainList.getJSONObject(i);//train;
-				bestSeatWeight = seatWeight;
+				bestTrain = trainList.getJSONObject(i);
 				if(bestWeight == weightMax){
 					break;
 				}
@@ -225,54 +241,12 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 		}
 		
 		mFrameMain.showLog(logStr);
-		mBestSeatType = getSeatTypeByWeight(bestSeatWeight,seatFilter);
 		return bestTrain;
 	}
 		
-	private int getTrainWeightValue(JSONObject train, String[] trainFilter){
-		int weightValue = 0;
-		int count = trainFilter.length;
-		String trainCode = null;
-		for(int i=0,weight=count;i<count;i++,weight--){
-			trainCode = train.getString(TicketInfoConstants.KEY_STATION_TRAIN_CODE);
-			if(trainCode.equals(trainFilter[i])){
-				weightValue = weight;
-				break;
-			}
-		}
-		return weightValue;
-	}
-		
 	private int mPassengerNum = 9;
-	
-	private int getSeatWeightValue(JSONObject train, String[] seatFilter){
-		int weightValue = 0;
-		int count = seatFilter.length;
-		String seatNum = null;
-		int num = 0;
-		for(int i=0,weight=count;i<count;i++,weight--){
-			//String numKey = SeatInfo.getSeatNumKey(seatFilter[i]);
-			seatNum = train.getString(SeatInfo.getSeatNumKey(seatFilter[i]));
-			num = SeatInfo.checkSeatNum(seatNum);
-			if(/*mSubmitWithoutEnoughTicket || */num >= mPassengerNum){
-				weightValue = weight;
-				break;
-			}
-		}
-		return weightValue;
-	}
 		
-	private String getSeatTypeByWeight(int weight, String[] seatFilter){
-		String seatType = null;
-		int count = seatFilter.length;
-		int index = count-weight;
-		if(index >=0 && index < count){
-			seatType = seatFilter[index];
-		}
-		return seatType;
-	}
-	
-	private boolean checkTrainCodeFilter(String trainCode){
+	private boolean checkTrainTypeFilter(String trainCode){
 		if(mTrainTypeFilters.size() == 0){
 			return false;
 		}
@@ -291,5 +265,142 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 			filtered = true;
 		}
 		return filtered;
+	}
+	
+	private TrainCodeFilter mTrainCodeFilter = new TrainCodeFilter();
+	private class TrainCodeFilter{
+		private HashMap<String,Integer> mTrainCodeFilters = new LinkedHashMap<String,Integer>();
+		private boolean mConsiderOther;
+		
+		public void setTrainCodeFilters(String trainCodes, String considerOther){
+			mConsiderOther = considerOther.equals("true");
+			
+			mTrainCodeFilters.clear();
+			
+			if(trainCodes == null || trainCodes.length() == 0){
+				return;
+			}
+			
+			String[] codes = trainCodes.split("[,;]");
+			int maxWeight = codes.length;
+			for(String code : codes){
+				mTrainCodeFilters.put(code.trim(),maxWeight);
+				maxWeight--;
+			}
+			
+			Log.i("setTrainCodeFilters ="+mTrainCodeFilters.toString());
+		}
+		
+		public int getTrainCodeWeight(String trainCode){
+			if(mTrainCodeFilters.containsKey(trainCode)){
+				return mTrainCodeFilters.get(trainCode);
+			}
+			return 0;
+		}
+		
+		public int getMaxWeight(){
+			return mTrainCodeFilters.size();
+		}
+				
+		public boolean isFiltered(String trainCode){
+			if(!mConsiderOther && (mTrainCodeFilters.size() > 0) && !mTrainCodeFilters.containsKey(trainCode)){
+				return true;
+			}			
+			return false;
+		}
+		
+		public boolean applayFilter(){
+			return mTrainCodeFilters.size() > 0;
+		}
+		
+		@Override
+		public String toString(){
+			return mTrainCodeFilters.toString();
+		}
+	}
+	
+	private SeatFilter mSeatFilter = new SeatFilter();
+	private class SeatFilter{
+		private HashMap<String,Integer> mSeatFilters = new LinkedHashMap<String,Integer>();
+		private HashMap<String,String> mTrainBestSeat = new HashMap<String,String>();
+				
+		public void setSeatFilters(String seats){
+			mTrainBestSeat.clear();
+			mSeatFilters.clear();
+			
+			if(seats == null || seats.length() == 0){
+				return;
+			}
+			
+			String[] seatFilters = seats.split("[,;]");
+			int maxWeight = seatFilters.length;
+			for(String seat : seatFilters){
+				mSeatFilters.put(seat.trim(),maxWeight);
+				maxWeight--;
+			}
+			
+			Log.i("setSeatFilters ="+mSeatFilters.toString());
+		}
+		
+		public int getSeatWeight(String trainCode){
+			if(mTrainBestSeat.containsKey(trainCode)){
+				String bestSeat = mTrainBestSeat.get(trainCode);
+				return mSeatFilters.get(bestSeat);
+			}
+			
+			return 0;
+		}
+		
+		private int getSeatWeight(JSONObject train){
+			String seatNum = null;
+			int num = 0;
+			int bestWeight = 0;
+			for(Map.Entry<String, Integer> entry : mSeatFilters.entrySet()){
+				seatNum = train.getString(SeatInfo.getSeatNumKey(entry.getKey()));
+				num = SeatInfo.checkSeatNum(seatNum);
+				if(/*mSubmitWithoutEnoughTicket || */num >= mPassengerNum){
+					bestWeight = entry.getValue();
+					String trainCode = train.getString(TicketInfoConstants.KEY_STATION_TRAIN_CODE);
+					mTrainBestSeat.put(trainCode, entry.getKey());
+					break;
+				}
+			}
+			
+			return bestWeight;
+		}
+		
+		public int getMaxWeight(){
+			return mSeatFilters.size();
+		}
+				
+		public boolean isFiltered(JSONObject train){
+			if(getSeatWeight(train) == 0){
+				return true;
+			}
+			return false;
+		}
+		
+		public String getTrainBestSeat(JSONObject train){
+			if(train == null){
+				return null;
+			}
+			
+			String trainCode = train.getJSONObject("queryLeftNewDTO").getString(TicketInfoConstants.KEY_STATION_TRAIN_CODE);
+			return mTrainBestSeat.get(trainCode);
+		}
+		
+		@Override
+		public String toString(){
+			return mSeatFilters.toString();
+		}
+	}
+	
+	/*
+	 * return true means filtered
+	 */
+	private boolean checkFilter(JSONObject train){
+		String trainCode = train.getString(TicketInfoConstants.KEY_STATION_TRAIN_CODE);		
+		return checkTrainTypeFilter(trainCode) || mTrainCodeFilter.isFiltered(trainCode)
+				|| mSeatFilter.isFiltered(train);
 	}
 }
