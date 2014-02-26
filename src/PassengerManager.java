@@ -309,7 +309,7 @@ public class PassengerManager  implements HttpResponseHandler{
 	public HashMap<String,Passenger> getSelectedPassengers(){
 		return mSelectedPassengers;
 	}
-	
+		
 	public HashMap<String,Passenger> getRemotePassengers(){
 		return mRemotePassengers;
 	}

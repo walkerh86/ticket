@@ -20,7 +20,7 @@ public class TicketInfoConstants {
 	public static final String KEY_YP_INFO = "yp_info";
 	public static final String KEY_START_TRAIN_DATE = "start_train_date";	
 	public static final String KEY_LOCATION_CODE = "location_code";	
-	public static final String KEY_SECRET_STR = "secretStr";	
+	public static final String KEY_SECRET_STR = "secretStr";
 	//public static final String KEY_GG_NUM = "gg_num";	
 	public static final String KEY_SWZ_NUM = "swz_num";
 	public static final String KEY_TZ_NUM = "tz_num";

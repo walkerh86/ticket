@@ -1,4 +1,6 @@
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -35,7 +37,9 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 	private boolean mAutoQueryStart = false;
 	private boolean mQueryAuto = false;
 	private boolean mSubmitWithoutEnoughTicket = false;
-	HashSet<String> mTrainTypeFilters = new HashSet<String>();
+	//HashSet<String> mTrainTypeFilters = new HashSet<String>();
+	
+	private int mPassengerNum = 9;
 	
 	public ProcessMainQuery(UiInterface cb, BlockingQueue<MyHttpUrlRequest> queue, 
 			UserInfo userInfo, PassengerManager passengerManager){	
@@ -59,8 +63,17 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 				mAutoQueryStart = false;
 				mFrameMain.setQueryState(mAutoQueryStart);
 			}else{
+				String seatFilter = mUserInfo.getSeatFitler();
+				if(seatFilter == null || seatFilter.length() == 0){
+					mSeatFilter.setSeatFilters(mDefaultSeatFilter);
+				}else{
+					mSeatFilter.setSeatFilters(mUserInfo.getSeatFitler());
+				}		
+				mTrainCodeFilter.setTrainCodeFilters(mUserInfo.getTrainFilter(),
+						mUserInfo.getConsiderOtherTrain());				
 				mPassengerNum = mPassengerManager.getSelectedPassengers().size();
-				mTrainTypeFilters = mFrameMain.getTrainTypeFilter();
+				//mTrainTypeFilters = mFrameMain.getTrainTypeFilter();
+				mTrainTypeFilter.setTrainTypeFilters(mUserInfo.getTrainTypeFilter());
 				mQueryAuto = mUserInfo.getQueryAuto().equals("true") ? true : false;
 				mSubmitWithoutEnoughTicket = mUserInfo.getSubmitWithoutEnoughTicket().equals("true") ? true : false;
 				if(mQueryAuto){
@@ -106,8 +119,7 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 	Timer mTimer = new Timer();
 	
 	public void parseTicketQuery(String str){
-		Log.i("parseTicketQuery start");
-		Log.i("parseTicketQuery,str="+str);
+		Log.i("parseTicketQuerystart str="+str);
 		
 		JSONObject jObj = JSONObject.fromObject(str);
 		String jString = null;
@@ -142,7 +154,9 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 	
 	private ProcessSubmitOrder mProcessSubmitOrder;
 	private void submitOrder(TicketInfo tickInfo){		
-		mProcessSubmitOrder = new ProcessSubmitOrder(null,mRequestQueue,mUserInfo,mPassengerManager);
+		if(mProcessSubmitOrder == null){
+			mProcessSubmitOrder = new ProcessSubmitOrder(null,mRequestQueue,mUserInfo,mPassengerManager);
+		}
 		mProcessSubmitOrder.startSubmitOrderSequence(tickInfo);
 	}
 
@@ -158,14 +172,7 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 	
 	private JSONObject getBestTrain(JSONArray trainList){
 		JSONObject bestTrain = null;
-		String seatFilter = mUserInfo.getSeatFitler();
-		if(seatFilter == null || seatFilter.length() == 0){
-			mSeatFilter.setSeatFilters(mDefaultSeatFilter);
-		}else{
-			mSeatFilter.setSeatFilters(mUserInfo.getSeatFitler());
-		}		
-		mTrainCodeFilter.setTrainCodeFilters(mUserInfo.getTrainFilter(),mUserInfo.getConsiderOtherTrain());		
-		
+					
 		String priorityType = mUserInfo.getPriorityType();
 		int seatWeightMax = mSeatFilter.getMaxWeight();
 		int trainWeightMax = mTrainCodeFilter.getMaxWeight();
@@ -187,26 +194,25 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 		}else{
 			weightMax = seatWeightMax;
 		}
-		String logStr = "";
+		
+		ArrayList<JSONObject> trainListArray = new ArrayList<JSONObject>();
 		for(int i=0;i<count;i++){
 			train = trainList.getJSONObject(i).getJSONObject("queryLeftNewDTO");
 			String trainCode = train.getString(TicketInfoConstants.KEY_STATION_TRAIN_CODE);
 			
-			logStr += train.getString(TicketInfoConstants.KEY_STATION_TRAIN_CODE)
-					+",  "+SeatInfo.getSeatName("zy")+"="+train.getString(TicketInfoConstants.KEY_ZY_NUM)
-					+",  "+SeatInfo.getSeatName("ze")+"="+train.getString(TicketInfoConstants.KEY_ZE_NUM)
-					+",  "+SeatInfo.getSeatName("rw")+"="+train.getString(TicketInfoConstants.KEY_RW_NUM)
-					+",  "+SeatInfo.getSeatName("yw")+"="+train.getString(TicketInfoConstants.KEY_YW_NUM)
-					+",  "+SeatInfo.getSeatName("rz")+"="+train.getString(TicketInfoConstants.KEY_RZ_NUM)
-					+",  "+SeatInfo.getSeatName("yz")+"="+train.getString(TicketInfoConstants.KEY_YZ_NUM)
-					+"\n";
-			if(checkFilter(train)){
+			if(!mTrainCodeFilter.isFiltered(trainCode) && !mTrainTypeFilter.isFiltered(trainCode)){
+				trainListArray.add(train);
+			}else{
+				continue;
+			}
+			
+			if(mSeatFilter.isFiltered(train)){
 				continue;
 			}
 			
 			if(mTrainCodeFilter.applayFilter()){
 				trainWeight = mTrainCodeFilter.getTrainCodeWeight(trainCode);
-				seatWeight = mSeatFilter.getSeatWeight(trainCode);//getSeatWeightValue(train,seatFilter);	
+				seatWeight = mSeatFilter.getSeatWeight(trainCode);	
 				if(priorityType.equals(UserInfo.PRIORITY_TYPE_SEAT)){
 					finalWeight = (seatWeight-1)*trainWeightMax + seatWeight+trainWeight;
 				}else if(priorityType.equals(UserInfo.PRIORITY_TYPE_TRAIN)){
@@ -215,22 +221,9 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 					finalWeight = seatWeight*trainWeight;
 				}
 			}else{
-				seatWeight = mSeatFilter.getSeatWeight(trainCode);//getSeatWeightValue(train,seatFilter);	
-				finalWeight = seatWeight;
+				finalWeight = mSeatFilter.getSeatWeight(trainCode);
 			}
 			
-			if(false){//(!mAutoQueryStart || finalWeight > 0){
-				logStr += train.getString(TicketInfoConstants.KEY_STATION_TRAIN_CODE)
-						+",  "+SeatInfo.getSeatName("zy")+"="+train.getString(TicketInfoConstants.KEY_ZY_NUM)
-						+",  "+SeatInfo.getSeatName("ze")+"="+train.getString(TicketInfoConstants.KEY_ZE_NUM)
-						+",  "+SeatInfo.getSeatName("rw")+"="+train.getString(TicketInfoConstants.KEY_RW_NUM)
-						+",  "+SeatInfo.getSeatName("yw")+"="+train.getString(TicketInfoConstants.KEY_YW_NUM)
-						+",  "+SeatInfo.getSeatName("rz")+"="+train.getString(TicketInfoConstants.KEY_RZ_NUM)
-						+",  "+SeatInfo.getSeatName("yz")+"="+train.getString(TicketInfoConstants.KEY_YZ_NUM)
-						+"\n";
-				Log.i("getBestTrain,trainCode="+trainCode+",trainWeight="+trainWeight+",seatWeight="+seatWeight
-						+",weightMax="+weightMax+",finalWeight="+finalWeight+",priorityType="+priorityType);
-			}
 			if(finalWeight > bestWeight){
 				bestWeight = finalWeight;
 				bestTrain = trainList.getJSONObject(i);
@@ -240,31 +233,57 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 			}
 		}
 		
-		mFrameMain.showLog(logStr);
+		if(mTrainCodeFilter.applayFilter()){
+			Collections.sort(trainListArray,mWeightComparator);
+		}
+		mFrameMain.updateTrainListTable(trainListArray);
 		return bestTrain;
 	}
 		
-	private int mPassengerNum = 9;
+	private TrainTypeFilter mTrainTypeFilter = new TrainTypeFilter();
+	private class TrainTypeFilter{
+		private HashSet<String> mTrainTypeFilters = new HashSet<String>();
 		
-	private boolean checkTrainTypeFilter(String trainCode){
-		if(mTrainTypeFilters.size() == 0){
+		public void setTrainTypeFilters(String trainTypes){
+			mTrainTypeFilters.clear();
+			
+			if(trainTypes == null || trainTypes.length() == 0){
+				return;
+			}
+			
+			String[] types = trainTypes.split("[,;]");
+			for(String type : types){
+				mTrainTypeFilters.add(type.trim());
+			}
+			
+			Log.i("setTrainTypeFilters ="+mTrainTypeFilters.toString());
+		}
+				
+		public boolean isFiltered(String trainCode){
+			if(mTrainTypeFilters.size() == 0){
+				return false;
+			}
+			
+			String type = trainCode.substring(0, 1);
+			if(type.equals(UserInfo.TRAIN_TYPE_FILTER_G) 
+				|| type.equals(UserInfo.TRAIN_TYPE_FILTER_D)
+				|| type.equals(UserInfo.TRAIN_TYPE_FILTER_Z)
+				|| type.equals(UserInfo.TRAIN_TYPE_FILTER_T)
+				|| type.equals(UserInfo.TRAIN_TYPE_FILTER_K)){
+				
+			}else{
+				type = "Q";
+			}
+			
+			if(!mTrainTypeFilters.contains(type)){
+				return true;
+			}			
 			return false;
 		}
-		boolean filtered = false;
-		String type = trainCode.substring(0, 1);
-		if(type.equals(UserInfo.TRAIN_TYPE_FILTER_G) 
-			|| type.equals(UserInfo.TRAIN_TYPE_FILTER_D)
-			|| type.equals(UserInfo.TRAIN_TYPE_FILTER_Z)
-			|| type.equals(UserInfo.TRAIN_TYPE_FILTER_T)
-			|| type.equals(UserInfo.TRAIN_TYPE_FILTER_K)){
-			
-		}else{
-			type = "Q";
+		
+		public boolean applayFilter(){
+			return mTrainTypeFilters.size() > 0;
 		}
-		if(!mTrainTypeFilters.contains(type)){
-			filtered = true;
-		}
-		return filtered;
 	}
 	
 	private TrainCodeFilter mTrainCodeFilter = new TrainCodeFilter();
@@ -312,13 +331,8 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 		public boolean applayFilter(){
 			return mTrainCodeFilters.size() > 0;
 		}
-		
-		@Override
-		public String toString(){
-			return mTrainCodeFilters.toString();
-		}
 	}
-	
+		
 	private SeatFilter mSeatFilter = new SeatFilter();
 	private class SeatFilter{
 		private HashMap<String,Integer> mSeatFilters = new LinkedHashMap<String,Integer>();
@@ -388,11 +402,6 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 			String trainCode = train.getJSONObject("queryLeftNewDTO").getString(TicketInfoConstants.KEY_STATION_TRAIN_CODE);
 			return mTrainBestSeat.get(trainCode);
 		}
-		
-		@Override
-		public String toString(){
-			return mSeatFilters.toString();
-		}
 	}
 	
 	/*
@@ -400,7 +409,23 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 	 */
 	private boolean checkFilter(JSONObject train){
 		String trainCode = train.getString(TicketInfoConstants.KEY_STATION_TRAIN_CODE);		
-		return checkTrainTypeFilter(trainCode) || mTrainCodeFilter.isFiltered(trainCode)
+		return mTrainTypeFilter.isFiltered(trainCode) || mTrainCodeFilter.isFiltered(trainCode)
 				|| mSeatFilter.isFiltered(train);
+	}
+	
+	private TrainWeightComparator mWeightComparator = new TrainWeightComparator();
+	private class TrainWeightComparator implements Comparator<JSONObject>{
+		@Override
+	    public int compare(JSONObject train1, JSONObject train2) {
+			int weight1 = mTrainCodeFilter.getTrainCodeWeight(train1.getString(TicketInfoConstants.KEY_STATION_TRAIN_CODE));
+			int weight2 = mTrainCodeFilter.getTrainCodeWeight(train2.getString(TicketInfoConstants.KEY_STATION_TRAIN_CODE));
+			if(weight2 > weight1){
+				return 1;
+			}else if(weight2 < weight1){
+				return -1;
+			}else{
+				return 0;
+			}
+		}
 	}
 }

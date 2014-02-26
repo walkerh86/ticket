@@ -11,8 +11,10 @@ import java.awt.event.ItemListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import net.CookieManager;
+import net.sf.json.JSONObject;
 
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,9 +28,13 @@ import javax.swing.JFormattedTextField;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.SwingConstants;
 import javax.swing.border.LineBorder;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.text.MaskFormatter;
 
 import util.DateHelper;
@@ -57,6 +63,7 @@ public class FrameMain extends JFrame{
 	private JCheckBox mSubmitWithoutEnoughCheckBox;
 	
 	private JCheckBox mConsiderOtherTrains;
+	private TrainListTableModel mTrainListModel;
 	
 	private boolean mAutoQueryStart;
 	
@@ -77,7 +84,7 @@ public class FrameMain extends JFrame{
 	private void initFrame(){
 		setTitle("主窗口");
 		setResizable(true);
-        setSize(800, 500); 
+        setSize(800, 560); 
         setLocationRelativeTo(null); //center in window
         addWindowListener(new WindowAdapter(){
         	public void windowClosing(WindowEvent e) { 
@@ -104,17 +111,11 @@ public class FrameMain extends JFrame{
 		initTrainFilterPanel(mRootPanel,c);
 		initPassengerPanel(mRootPanel,c);
 		initSeatPanel(mRootPanel,c);
-		initQueryOptionPanel(mRootPanel,c);
-		
-		mLogLabel = new JTextArea("test");
-		mLogLabel.setBackground(new Color(0,0,0,0));
-		c.gridx = 0;
-		c.gridy = 8;
-		c.weighty = 1;
-		c.gridwidth = 9;
-		mRootPanel.add(mLogLabel,c);
+		initQueryOptionPanel(mRootPanel,c);	
+		initTrainListTablePanel(mRootPanel,c);
+		initMessagePanel(mRootPanel,c);
 	}
-	
+		
 	private void initStationDatePanel(JPanel parent, GridBagConstraints c){
 		c.gridy = 0;
 		c.gridheight = 1;
@@ -227,6 +228,7 @@ public class FrameMain extends JFrame{
 		mTrainFilterInput.setText(mUserInfo.getTrainFilter());
 		parent.add(mTrainFilterInput,c);
 		mConsiderOtherTrains = new JCheckBox("考虑其他车次？");
+		mConsiderOtherTrains.setSelected(mUserInfo.getConsiderOtherTrain().equals("true"));
 		c.gridx = 8;
 		c.weightx = 0;
 		c.gridwidth = 1;
@@ -245,6 +247,7 @@ public class FrameMain extends JFrame{
 		mQueryBtn = new JButton("查询");
 		mQueryBtn.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent evt) {
+				mLogLabel.setText("Message:");
 				if(mAutoQueryStart || checkUserInfo()){
 					mUiActionListener.onUiAction(UiActionListener.UI_ACTION_TICKET_QUERY);
 				}
@@ -315,6 +318,34 @@ public class FrameMain extends JFrame{
 		}
 		optionPanel.add(mSubmitWithoutEnoughCheckBox);
 	}
+	
+	private void initTrainListTablePanel(JPanel parent, GridBagConstraints c) {
+		mTrainListModel = new TrainListTableModel();
+		JTable trainList = new JTable(mTrainListModel);
+		trainList.setRowHeight(30);
+		trainList.setPreferredScrollableViewportSize(new Dimension(500, 200));
+		trainList.setFillsViewportHeight(true);
+		DefaultTableCellRenderer tcr = new DefaultTableCellRenderer();
+		tcr.setHorizontalAlignment(SwingConstants.CENTER);
+		trainList.setDefaultRenderer(Object.class, tcr);
+		c.gridx = 0;
+		c.gridy = 8;
+		c.weighty = 1;
+		c.gridwidth = 9;
+		JScrollPane scrollPane = new JScrollPane(trainList);
+		parent.add(scrollPane, c);
+	}
+
+	private void initMessagePanel(JPanel parent, GridBagConstraints c) {
+		mLogLabel = new JTextArea("Message:");
+		mLogLabel.setBackground(new Color(0, 0, 0, 0));
+		c.gridx = 0;
+		c.gridy = 9;
+		c.gridwidth = 9;
+		c.gridheight = 1;
+		mRootPanel.add(mLogLabel, c);
+	}
+
 	private ItemListener mPriorityItemListener = new ItemListener(){
 		public void itemStateChanged(ItemEvent itemEvent) {
 			JCheckBox child = (JCheckBox)itemEvent.getItem();
@@ -764,5 +795,9 @@ public class FrameMain extends JFrame{
 	
 	public HashSet<String> getTrainTypeFilter(){
 		return mTrainTypeFilters;
+	}
+	
+	public void updateTrainListTable(ArrayList<JSONObject> trainList){
+		mTrainListModel.updateData(trainList);
 	}
 }

@@ -286,6 +286,7 @@ public class ProcessSubmitOrder implements HttpResponseHandler,UiActionListener{
 		HashMap<String,Passenger> passengers = mPassengerManager.getSelectedPassengers();
 		Passenger passenger;
 		Log.i("seatTypeCode="+mSubmitTicketInfo.mSeatTypeCode);
+		int passengerNum = 0;
 		for(Map.Entry<String, Passenger>entry : passengers.entrySet()){
 			passenger = entry.getValue();
 			String oldStr = "";
@@ -297,6 +298,11 @@ public class ProcessSubmitOrder implements HttpResponseHandler,UiActionListener{
 					+ passenger.getIdTypeCode() + "," + passenger.getIdNo() + ","
 					+ passenger.getMobileNo() + ",N";
 			oldStrs += bR + "_";
+			
+			passengerNum++;
+			if(passengerNum >= mSubmitTicketInfo.mSeatTicketNum){
+				break;
+			}
 		}
 		
 		return oldStrs.substring(0, oldStrs.length() - 1);
@@ -306,11 +312,17 @@ public class ProcessSubmitOrder implements HttpResponseHandler,UiActionListener{
 		String oldStrs = "";
 		HashMap<String,Passenger> passengers = mPassengerManager.getSelectedPassengers();
 		Passenger passenger;
+		int passengerNum = 0;
 		for(Map.Entry<String, Passenger>entry : passengers.entrySet()){
 			passenger = entry.getValue();
 			String oldStr = passenger.getName() + "," + passenger.getIdTypeCode() + "," 
 					+ passenger.getIdNo() + "," + passenger.getTypeCode();
 			oldStrs += oldStr + "_";
+			
+			passengerNum++;
+			if(passengerNum >= mSubmitTicketInfo.mSeatTicketNum){
+				break;
+			}
 		}
 		return oldStrs;
 	}

@@ -28,7 +28,8 @@ public class UserInfo {
 	private static final String KEY_AUTO_QUERY="auto_query";
 	private static final String KEY_QUERY_MODE="query_mode";
 	private static final String KEY_SUBMIT_WITHOUT_ENOUGH_TICKET="submit_without_enough_ticket";
-	public static final String KEY_PASSENGERS = "passengers";
+	private static final String KEY_PASSENGERS = "passengers";
+	private static final String KEY_LOCAL_PASSENGERS = "local_passengers";
 	
 	private static final String KEY_CONSIDER_OTHER_TRAIN="consider_other_train";
 	private String mConsiderOtherTrain = "false";
@@ -72,6 +73,7 @@ public class UserInfo {
 	private String mSubmitWithoutEnough = "false";
 	//passenger
 	private String mPassengers;
+	private String mLocalPassengers;
 	//
 	private Properties mProperties = new Properties();
 	
@@ -216,6 +218,14 @@ public class UserInfo {
 		mPassengers = passengers;
 	}
 	
+	public String getLocalPassengers(){
+		return mLocalPassengers;
+	}
+	
+	public void setLocalPassengers(String passengers){
+		mLocalPassengers = passengers;
+	}
+	
 	public String getTrainTypeFilter(){
 		return mTrainTypeFilter;
 	}
@@ -301,6 +311,10 @@ public class UserInfo {
 			if(value != null){
 				setPassengers(value);
 			}
+			value = mProperties.getProperty(KEY_LOCAL_PASSENGERS);
+			if(value != null){
+				setLocalPassengers(value);
+			}
 			value = mProperties.getProperty(KEY_PRIORITY_TYPE);
 			if(value != null){
 				setPriorityType(value);
@@ -360,6 +374,9 @@ public class UserInfo {
 		}
 		if(mPassengers != null){
 			mProperties.setProperty(KEY_PASSENGERS, mPassengers);
+		}
+		if(mLocalPassengers != null){
+			mProperties.setProperty(KEY_LOCAL_PASSENGERS, mLocalPassengers);
 		}
 		if(mPriorityType != null){
 			mProperties.setProperty(KEY_PRIORITY_TYPE, mPriorityType);
