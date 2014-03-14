@@ -116,7 +116,7 @@ public class FramePassengerList extends JFrame implements HttpResponseHandler{
         setSize(600, 340); 
         setLocationRelativeTo(null); //center in window
         
-        mHintDialog = new MessageDialog();
+        mHintDialog = MessageDialog.getInstance();
 	}
 
 	private void initLayout(){
@@ -252,7 +252,7 @@ public class FramePassengerList extends JFrame implements HttpResponseHandler{
 		params.put("studentInfoDTO.school_system", "1");
 		params.put("studentInfoDTO.student_no", "");
 		mRequestQueue.add(new MyHttpUrlRequest("https://kyfw.12306.cn/otn/passengers/add","POST",
-				HttpHeader.addPassenger(),params,
+				HttpHeader.getHeader("https://kyfw.12306.cn/otn/passengers/addInit"),params,
 				new StringHttpResponse(this,0)));
 	}
 	

@@ -65,13 +65,13 @@ public class ProcessLogin implements HttpResponseHandler,UiActionListener{
 
 	public void stepGetCookie(){
 		mRequestQueue.add(new MyHttpUrlRequest(UrlConstants.GET_COOKIE_URL,"GET",
-				HttpHeader.loginInitHearder(),null,
+				HttpHeader.getHeader(null),null,
 				new StringHttpResponse(this,STEP_GET_COOKIE)));
 	}
 	
 	public void stepGetLoginCaptcha(){
 		mRequestQueue.add(new MyHttpUrlRequest(UrlConstants.GET_LOGIN_CAPTCHA_URL,"GET",
-				HttpHeader.getPassCode(true),null,
+				HttpHeader.getHeader(UrlConstants.REF_LOGINPASSCODE_URL),null,
 				new ImageHttpResponse(UrlConstants.FILE_LOGIN_CAPTCHA_URL,this,STEP_GET_LOGIN_CAPTCHA)));
 	}
 	
@@ -80,7 +80,7 @@ public class ProcessLogin implements HttpResponseHandler,UiActionListener{
 		params.put("randCode", mFrameLogin.getCaptchaCode());
 		params.put("rand", "sjrand");
 		mRequestQueue.add(new MyHttpUrlRequest("https://kyfw.12306.cn/otn/passcodeNew/checkRandCodeAnsyn","POST",
-				HttpHeader.postCheckCode(),params,
+				HttpHeader.getHeader(UrlConstants.REF_LOGINPASSCODE_URL),params,
 				new StringHttpResponse(this,STEP_CHECK_CAPTCHA_CODE)));
 	}
 	
@@ -90,7 +90,7 @@ public class ProcessLogin implements HttpResponseHandler,UiActionListener{
 		params.put("userDTO.password", mUserInfo.getUserPw());
 		params.put("randCode", mUserInfo.getCaptchaCode());
 		mRequestQueue.add(new MyHttpUrlRequest(UrlConstants.GET_LOGIN_AYSN_SUGGEST_URL,"POST",
-				HttpHeader.postCheckCode(),params,
+				HttpHeader.getHeader(UrlConstants.REF_LOGINPASSCODE_URL),params,
 				new StringHttpResponse(this,STEP_LOGIN_AYNC_SUGGEST)));
 	}
 	
@@ -103,7 +103,7 @@ public class ProcessLogin implements HttpResponseHandler,UiActionListener{
 				new StringHttpResponse(this,STEP_LOGIN_REQUEST)));
 		*/
 		mRequestQueue.add(new MyHttpUrlRequest("https://kyfw.12306.cn/otn/index/init","GET",
-				HttpHeader.login(),null,
+				HttpHeader.getHeader(UrlConstants.REF_LOGINPASSCODE_URL),null,
 				new StringHttpResponse(this,STEP_LOGIN_INIT)));
 	}	
 	

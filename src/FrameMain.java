@@ -72,7 +72,7 @@ public class FrameMain extends JFrame{
 	
 	private HashSet<String> mTrainTypeFilters = new LinkedHashSet<String>();
 	
-	private MessageDialog mMessageDialog = new MessageDialog();
+	private MessageDialog mMessageDialog = MessageDialog.getInstance();
 	
 	public FrameMain(UserInfo userInfo, UiActionListener listener){
 		mUserInfo = userInfo;
@@ -301,6 +301,7 @@ public class FrameMain extends JFrame{
 		}
 		mQueryModeQiangCheckBox.addItemListener(mQueryModeItemListener);
 		modePanel.add(mQueryModeQiangCheckBox);
+		mQueryModeQiangCheckBox.setEnabled(false);
 		
 		mQueryModeJianCheckBox = new JCheckBox("捡漏");
 		mQueryModeJianCheckBox.setName(UserInfo.QUERY_MODE_JIAN);
@@ -309,6 +310,7 @@ public class FrameMain extends JFrame{
 		}
 		mQueryModeJianCheckBox.addItemListener(mQueryModeItemListener);
 		modePanel.add(mQueryModeJianCheckBox);
+		mQueryModeJianCheckBox.setEnabled(false);
 		
 		mSubmitWithoutEnoughCheckBox = new JCheckBox("余票不足部分提交");
 		mSubmitWithoutEnoughCheckBox.setEnabled(false);
@@ -528,12 +530,10 @@ public class FrameMain extends JFrame{
 				if(mFramePassengerList != null){
 					mFramePassengerList.unSelectPassenger(key);
 				}
-				mPassengerPanel.remove(child);
-				mPassengerPanel.validate();
-				mPassengerPanel.repaint();
-				mRootPanel.validate();
-				mRootPanel.repaint();
+				mPassengerPanel.remove(child);				
 			}
+			mPassengerPanel.validate();
+			mPassengerPanel.repaint();
 		}
 	};
 	

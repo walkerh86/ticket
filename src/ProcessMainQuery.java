@@ -94,7 +94,7 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 		params.put("leftTicketDTO.to_station", mUserInfo.getToStationCode());
 		params.put("purpose_codes", "ADULT");
 		mRequestQueue.add(new MyHttpUrlRequest(UrlConstants.REQ_TIKETSEARCH_URL,"GET",
-				HttpHeader.tiketSearch(),params,
+				HttpHeader.getHeader(UrlConstants.REF_TICKET_URL),params,
 				new StringHttpResponse(this,STEP_QUERY_LEFT)));
 	}
 	

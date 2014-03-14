@@ -132,7 +132,7 @@ public class PassengerManager  implements HttpResponseHandler{
 	
 	public void initPassengersRequest(HttpResponseHandler handler){
 		mRequestQueue.add(new MyHttpUrlRequest(UrlConstants.REQ_PASSENGERS_INIT_URL,"GET",
-				HttpHeader.initPassengers(),null,
+				HttpHeader.getHeader(UrlConstants.REF_PASSENGERS_INIT_URL),null,
 				new StringHttpResponse(handler,STEP_INIT_PASSENGERS)));
 	}
 	
@@ -141,7 +141,7 @@ public class PassengerManager  implements HttpResponseHandler{
 		params.put("pageIndex",Integer.toString(pageIdex));
 		params.put("pageSize",Integer.toString(pageSize));
 		mRequestQueue.add(new MyHttpUrlRequest(UrlConstants.REQ_PASSENGERS_QUERY_URL,"POST",
-				HttpHeader.initPassengers(),params,
+				HttpHeader.getHeader(UrlConstants.REF_PASSENGERS_INIT_URL),params,
 				new StringHttpResponse(handler,STEP_QUERY_PASSENGERS)));
 	}
 	

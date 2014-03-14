@@ -4,8 +4,9 @@ import javax.swing.JLabel;
 
 public class MessageDialog extends JDialog{
 	private JLabel mMessageLabel;
+	private static MessageDialog mThis;
 	
-	public MessageDialog(){
+	private MessageDialog(){
 		setTitle("ÌבÊ¾");
 		setResizable(false);
         setSize(300, 80); 
@@ -13,6 +14,13 @@ public class MessageDialog extends JDialog{
         
         mMessageLabel = new JLabel();
         getContentPane().add(mMessageLabel);
+	}
+	
+	public static MessageDialog getInstance(){
+		if(mThis == null){
+			mThis = new MessageDialog();
+		}
+		return mThis;
 	}
 	
 	public void showMessage(String msg){

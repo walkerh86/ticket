@@ -42,6 +42,8 @@ public class ProcessSubmitOrder implements HttpResponseHandler,UiActionListener{
 	
 	private FrameSubmitOrder mFrameSubmitOrder;
 	
+	private ProcessOrderList mProcessOrderList;
+	
 	public ProcessSubmitOrder(UiInterface cb, BlockingQueue<MyHttpUrlRequest> queue, 
 			UserInfo userInfo, PassengerManager passengerManager){
 		mCallBack = cb;
@@ -59,8 +61,10 @@ public class ProcessSubmitOrder implements HttpResponseHandler,UiActionListener{
 	
 	public void initUi(){
 		if(mFrameSubmitOrder == null){
-			mFrameSubmitOrder = new FrameSubmitOrder(this, mSubmitTicketInfo);
+			mFrameSubmitOrder = new FrameSubmitOrder(this);
 		}
+		
+		mFrameSubmitOrder.showNewSubmitOrder(mSubmitTicketInfo);		
 		mFrameSubmitOrder.setVisible(true);
 	}
 	
@@ -70,6 +74,11 @@ public class ProcessSubmitOrder implements HttpResponseHandler,UiActionListener{
 			stepSubmitOrderCheckOrderInfo(this);
 		}else if(action == UiActionListener.UI_ACTION_UPDATE_CAPTCHA){
 			stepSubmitOrderGetCaptCha(this);
+		}else if(action == UiActionListener.UI_ACTION_ORDER_QUERY_NO_COMPLETE){
+			if(mProcessOrderList == null){
+				mProcessOrderList = new ProcessOrderList(mRequestQueue);
+			}
+			mProcessOrderList.showOrderList();
 		}
 	}
 	
@@ -77,7 +86,7 @@ public class ProcessSubmitOrder implements HttpResponseHandler,UiActionListener{
 		LinkedHashMap<String, String> params = new LinkedHashMap<String, String>();
 		params.put("_json_att","");
 		mRequestQueue.add(new MyHttpUrlRequest("https://kyfw.12306.cn/otn/login/checkUser","POST",
-				HttpHeader.submitOrder(),params,
+				HttpHeader.getHeader(UrlConstants.REF_TICKET_URL),params,
 				new StringHttpResponse(handler,STEP_SUBMIT_ORDER_CHECK_USER)));
 	}
 	
@@ -92,7 +101,7 @@ public class ProcessSubmitOrder implements HttpResponseHandler,UiActionListener{
 		params.put("query_to_station_name",mSubmitTicketInfo.mToStationName);
 		params.put("undefined","");
 		mRequestQueue.add(new MyHttpUrlRequest(UrlConstants.REQ_SUBMITORDER_URL,"POST",
-				HttpHeader.submitOrder(),params,
+				HttpHeader.getHeader(UrlConstants.REF_TICKET_URL),params,
 				new StringHttpResponse(handler,STEP_SUBMIT_ORDER_REQUEST)));
 	}
 	
@@ -100,13 +109,13 @@ public class ProcessSubmitOrder implements HttpResponseHandler,UiActionListener{
 		LinkedHashMap<String, String> params = new LinkedHashMap<String, String>();
 		params.put("_json_att","");
 		mRequestQueue.add(new MyHttpUrlRequest(UrlConstants.REQ_INITDC_URL,"POST",
-				HttpHeader.initDc(),params,
+				HttpHeader.getHeader(UrlConstants.REF_TICKET_URL),params,
 				new StringHttpResponse(handler,STEP_SUBMIT_ORDER_INITDC)));
 	}
 	
 	public void stepSubmitOrderGetCaptCha(HttpResponseHandler handler){
 		mRequestQueue.add(new MyHttpUrlRequest(UrlConstants.REQ_GETSUBPASSCODE_URL,"GET",
-				HttpHeader.getPassCode(false),null,
+				HttpHeader.getHeader(UrlConstants.REQ_INITDC_URL),null,
 				new ImageHttpResponse(UrlConstants.FILE_SUBMIT_CAPTCHA_URL,handler,STEP_SUBMIT_ORDER_GET_CAPTCHA)));
 	}
 	
@@ -122,7 +131,7 @@ public class ProcessSubmitOrder implements HttpResponseHandler,UiActionListener{
 			params.put("_json_att", "");		
 			params.put("REPEAT_SUBMIT_TOKEN", mSubmitToken);		
 			mRequestQueue.add(new MyHttpUrlRequest("https://kyfw.12306.cn/otn/confirmPassenger/checkOrderInfo","POST",
-					HttpHeader.checkOrder(),params,
+					HttpHeader.getHeader(UrlConstants.REQ_INITDC_URL),params,
 					new StringHttpResponse(handler,STEP_SUBMIT_ORDER_CHECK_ORDER_INFO)));
 		}catch(UnsupportedEncodingException e){
 			Log.i("stepSubmitOrderCheckOrderInfo,e="+e);
@@ -142,7 +151,7 @@ public class ProcessSubmitOrder implements HttpResponseHandler,UiActionListener{
 		params.put("_json_att", "");
 		params.put("REPEAT_SUBMIT_TOKEN", mSubmitToken);
 		mRequestQueue.add(new MyHttpUrlRequest("https://kyfw.12306.cn/otn/confirmPassenger/getQueueCount","POST",
-				HttpHeader.checkOrder(),params,
+				HttpHeader.getHeader(UrlConstants.REQ_INITDC_URL),params,
 				new StringHttpResponse(handler,STEP_SUBMIT_ORDER_GET_QUEUE_COUNT)));
 	}
 	
@@ -159,7 +168,7 @@ public class ProcessSubmitOrder implements HttpResponseHandler,UiActionListener{
 			params.put("_json_att", "");
 			params.put("REPEAT_SUBMIT_TOKEN", mSubmitToken);
 			mRequestQueue.add(new MyHttpUrlRequest("https://kyfw.12306.cn/otn/confirmPassenger/confirmSingleForQueue","POST",
-					HttpHeader.checkOrder(),params,
+					HttpHeader.getHeader(UrlConstants.REQ_INITDC_URL),params,
 					new StringHttpResponse(handler,STEP_SUBMIT_ORDER_CONFIRM_SINGLE)));
 		}catch(UnsupportedEncodingException e){
 			Log.i("stepSubmitOrderConfirmSingle,e="+e);

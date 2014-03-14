@@ -21,10 +21,14 @@ public class FrameSubmitOrder extends JFrame{
 	private UiActionListener mUiActionListener;
 	private TicketInfo mSubmitTicketInfo;
 	private JTextArea mLogLabel;
+	private JButton mQueryOderBtn;
 	
-	public FrameSubmitOrder(UiActionListener listener, TicketInfo ticketInfo){
+	private JLabel mFromStationName;
+	private JLabel mStationArrow;
+	private JLabel mToStationName;
+	
+	public FrameSubmitOrder(UiActionListener listener){
 		mUiActionListener = listener;
-		mSubmitTicketInfo = ticketInfo;
 		initFrame();
 	}
 	
@@ -61,18 +65,17 @@ public class FrameSubmitOrder extends JFrame{
 		int xOffset = LEFT_PADDING; //left padding
 		int yOffset = TOP_PADDING; //top padding
 		
-		JLabel fromStationName = new JLabel(mSubmitTicketInfo.mFromStationName);
-		fromStationName.setBounds(xOffset, yOffset, LABEL_WIDTH, ROW_HEIGHT);		
-		panel.add(fromStationName);	
+		mFromStationName = new JLabel();
+		mFromStationName.setBounds(xOffset, yOffset, LABEL_WIDTH, ROW_HEIGHT);		
+		panel.add(mFromStationName);	
 		xOffset += LABEL_WIDTH;
-		JLabel arrow = new JLabel("----  "+mSubmitTicketInfo.mStationTrainCode
-				+", "+mSubmitTicketInfo.mSeatTypeName+"  --->");
-		arrow.setBounds(xOffset, yOffset, ARROW_WIDTH, ROW_HEIGHT);		
-		panel.add(arrow);	
+		mStationArrow = new JLabel();
+		mStationArrow.setBounds(xOffset, yOffset, ARROW_WIDTH, ROW_HEIGHT);		
+		panel.add(mStationArrow);	
 		xOffset += ARROW_WIDTH;
-		JLabel toStationName = new JLabel(mSubmitTicketInfo.mToStationName);
-		toStationName.setBounds(xOffset, yOffset, LABEL_WIDTH, ROW_HEIGHT);		
-		panel.add(toStationName);	
+		mToStationName = new JLabel();
+		mToStationName.setBounds(xOffset, yOffset, LABEL_WIDTH, ROW_HEIGHT);		
+		panel.add(mToStationName);	
 		
 		xOffset = LEFT_PADDING; //left padding
 		yOffset += ROW_HEIGHT+ROW_GAP;		
@@ -120,6 +123,16 @@ public class FrameSubmitOrder extends JFrame{
 		});
 		panel.add(submitBtn);
 		
+		xOffset += 110;
+		JButton mQueryOderBtn = new JButton("¼ì²é¶©µ¥");
+		mQueryOderBtn.setBounds(xOffset, yOffset, 100, ROW_HEIGHT);
+		mQueryOderBtn.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent evt) {
+				mUiActionListener.onUiAction(UiActionListener.UI_ACTION_ORDER_QUERY_NO_COMPLETE);
+			}
+		});
+		panel.add(mQueryOderBtn);
+		
 		//row 5
 		xOffset = LEFT_PADDING; // left padding
 		yOffset += ROW_HEIGHT + ROW_GAP;
@@ -143,5 +156,19 @@ public class FrameSubmitOrder extends JFrame{
 			msg += message+"\n";
 		}
 		mLogLabel.setText(msg);
+	}
+	
+	private void updateUi(TicketInfo ticketInfo){
+		mFromStationName.setText(ticketInfo.mFromStationName);
+		mToStationName.setText(ticketInfo.mToStationName);
+		mStationArrow.setText("----  "+ticketInfo.mStationTrainCode+", "+ticketInfo.mSeatTypeName+"  --->");
+		mCaptchaInput.setText("");
+		mCaptchaImg.setIcon(null);
+		mLogLabel.setText("");
+	}
+	
+	public void showNewSubmitOrder(TicketInfo ticketInfo){
+		mSubmitTicketInfo = ticketInfo;
+		updateUi(ticketInfo);
 	}
 }
