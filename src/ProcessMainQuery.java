@@ -196,6 +196,7 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 		}
 		
 		ArrayList<JSONObject> trainListArray = new ArrayList<JSONObject>();
+		Log.i("train num="+count);
 		for(int i=0;i<count;i++){
 			train = trainList.getJSONObject(i).getJSONObject("queryLeftNewDTO");
 			String trainCode = train.getString(TicketInfoConstants.KEY_STATION_TRAIN_CODE);
@@ -227,7 +228,7 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 			if(finalWeight > bestWeight){
 				bestWeight = finalWeight;
 				bestTrain = trainList.getJSONObject(i);
-				if(bestWeight == weightMax){
+				if(bestWeight == weightMax && mAutoQueryStart){
 					break;
 				}
 			}
