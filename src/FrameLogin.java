@@ -28,7 +28,7 @@ public class FrameLogin extends JFrame{
 	private UiActionListener mUiActionListener;
 	
 	private UserInfo mUserInfo;
-	
+		
 	public FrameLogin(UiActionListener listener){
 		mUiActionListener = listener;
 		initFrame();
@@ -37,7 +37,7 @@ public class FrameLogin extends JFrame{
 	private void initFrame(){
 		setTitle("µ«¬Ω");
 		setResizable(false);
-        setSize(400, 280); 
+        setSize(310, 300); 
         setLocationRelativeTo(null); //center in window
         addWindowListener(new WindowAdapter(){
         	public void windowClosing(WindowEvent e) { 
@@ -107,7 +107,7 @@ public class FrameLogin extends JFrame{
 		
 		mCaptchaInput = new JTextField();
 		mCaptchaInput.requestFocusInWindow();
-		mCaptchaInput.setBounds(xOffset, yOffset, INPUT_WIDTH, ROW_HEIGHT);
+		mCaptchaInput.setBounds(xOffset, yOffset, 110, ROW_HEIGHT);
 		mCaptchaInput.addKeyListener(new KeyAdapter(){
 			public void keyTyped(final KeyEvent e) {
 				int len = mCaptchaInput.getText().length();
@@ -120,10 +120,10 @@ public class FrameLogin extends JFrame{
 			}
 		});
 		panel.add(mCaptchaInput);
-		xOffset += INPUT_WIDTH+COL_GAP;
+		xOffset += 110+COL_GAP;
 		
 		mCaptchaImg = new JButton();
-		mCaptchaImg.setBounds(xOffset, yOffset, CAPTCHA_WIDTH, ROW_HEIGHT);
+		mCaptchaImg.setBounds(xOffset, yOffset+8, 78, 26);
 		mCaptchaImg.setBackground(Color.GRAY);
 		mCaptchaImg.setIcon(new ImageIcon("captcha.png"));
 		mCaptchaImg.addActionListener(new ActionListener(){
@@ -139,7 +139,7 @@ public class FrameLogin extends JFrame{
 		xOffset = LEFT_PADDING; // left padding
 		yOffset += ROW_GAP;
 		JButton loginBtn = new JButton();
-		loginBtn.setBounds(xOffset, yOffset, LABEL_WIDTH, ROW_HEIGHT);
+		loginBtn.setBounds(xOffset, yOffset, 260, ROW_HEIGHT);
 		loginBtn.setText("µ«¬Ω");
 		loginBtn.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent evt) {
@@ -147,15 +147,17 @@ public class FrameLogin extends JFrame{
 			}
 		});
 		panel.add(loginBtn);
+		yOffset += ROW_HEIGHT+10;
 		
 		//row 5
 		
-		xOffset = mCaptchaImg.getBounds().x; // left padding
-		yOffset = TOP_PADDING;
+		xOffset = LEFT_PADDING; // left padding
 		mLogLabel = new JTextArea();
 		mLogLabel.setBackground(new Color(0,0,0,0));
-		mLogLabel.setBounds(xOffset, yOffset, LOG_WIDTH, ROW_HEIGHT*2);
+		mLogLabel.setBounds(xOffset, yOffset, 260, ROW_HEIGHT*2);
 		mLogLabel.setForeground(Color.RED);
+		mLogLabel.setLineWrap(true);
+		
 		panel.add(mLogLabel);
 	}
 	
@@ -182,6 +184,7 @@ public class FrameLogin extends JFrame{
 	}
 	
 	private void doLogin(){
+		showLog("");
 		if(checkUserInput()){
 			if(mUiActionListener != null){
 				mUiActionListener.onUiAction(UiActionListener.UI_ACTION_USER_LOGIN);
@@ -191,13 +194,16 @@ public class FrameLogin extends JFrame{
 	
 	private boolean checkUserInput(){
 		if(TextUtil.isEmpty(mUserNameInput.getText())){
+			showLog("«Î ‰»Î”√ªß√˚£°");
 			return false;
 		}
 		if(TextUtil.isEmpty(new String(mUserPwInput.getPassword()))){
+			showLog("«Î ‰»Î√‹¬Î£°");
 			return false;
 		}
 		
 		if(TextUtil.isEmpty(mCaptchaInput.getText()) || mCaptchaInput.getText().length() < 4){
+			showLog("«Î ‰»Î—È÷§¬Î£°");
 			return false;
 		}
 		
