@@ -62,12 +62,17 @@ public class HttpDispatcher extends Thread{
                 continue;
             }
 			boolean success = false;
+			int retry_count = 0;
 			while(!success){
 				success = processRequest(request);
 				if (mQuit) {
                     return;
                 }
 				if(!success){
+					retry_count++;
+					if(retry_count >3){
+						break;
+					}
 					try{
 						Thread.sleep(500);
 					}catch(InterruptedException e){
@@ -106,7 +111,7 @@ public class HttpDispatcher extends Thread{
 				for(Map.Entry<String, String>entry : headers.entrySet()){
 					connection.addRequestProperty(entry.getKey(),entry.getValue());
 				}
-			}
+			}			
 			String cookie = mCookieManager.getCookieString();
 			if(cookie != null){
 				Log.i("cookie="+cookie);

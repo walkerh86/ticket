@@ -202,7 +202,7 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 			String trainCode = train.getString(TicketInfoConstants.KEY_STATION_TRAIN_CODE);
 			
 			if(!mTrainCodeFilter.isFiltered(trainCode) && !mTrainTypeFilter.isFiltered(trainCode)){
-				trainListArray.add(train);
+				trainListArray.add(trainList.getJSONObject(i));
 			}else{
 				continue;
 			}
@@ -418,8 +418,8 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 	private class TrainWeightComparator implements Comparator<JSONObject>{
 		@Override
 	    public int compare(JSONObject train1, JSONObject train2) {
-			int weight1 = mTrainCodeFilter.getTrainCodeWeight(train1.getString(TicketInfoConstants.KEY_STATION_TRAIN_CODE));
-			int weight2 = mTrainCodeFilter.getTrainCodeWeight(train2.getString(TicketInfoConstants.KEY_STATION_TRAIN_CODE));
+			int weight1 = mTrainCodeFilter.getTrainCodeWeight(train1.getJSONObject("queryLeftNewDTO").getString(TicketInfoConstants.KEY_STATION_TRAIN_CODE));
+			int weight2 = mTrainCodeFilter.getTrainCodeWeight(train2.getJSONObject("queryLeftNewDTO").getString(TicketInfoConstants.KEY_STATION_TRAIN_CODE));
 			if(weight2 > weight1){
 				return 1;
 			}else if(weight2 < weight1){

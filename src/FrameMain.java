@@ -84,7 +84,7 @@ public class FrameMain extends JFrame{
 	private void initFrame(){
 		setTitle("Ö÷´°¿Ú");
 		setResizable(true);
-        setSize(800, 560); 
+        setSize(900, 560); 
         setLocationRelativeTo(null); //center in window
         addWindowListener(new WindowAdapter(){
         	public void windowClosing(WindowEvent e) { 

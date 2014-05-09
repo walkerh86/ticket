@@ -61,6 +61,20 @@ public class TicketInfo {
 		return ticketInfo;
 	}
 	
+	public static String getStartEndTime(JSONObject train){		
+		return train.getString(TicketInfoConstants.KEY_START_TIME)+" - "+train.getString(TicketInfoConstants.KEY_ARRIVE_TIME);
+	}
+	
+	public static String getStartEndStation(JSONObject train){
+		String startStationCode = train.getString(TicketInfoConstants.KEY_START_STATION_TELECODE);
+		String fromStationCode = train.getString(TicketInfoConstants.KEY_FROM_STATION_TELECODE);
+		String startString = "(Й§)";
+		if(startStationCode.equals(fromStationCode)){
+			startString = "(ЪМ)";
+		}
+		return startString+train.getString(TicketInfoConstants.KEY_FROM_STATION_NAME)+" - (же)"+train.getString(TicketInfoConstants.KEY_TO_STATION_NAME);
+	}
+	
 	public String toString(){
 		return mStationTrainCode+","+mFromStationName+","+mToStationName+","+mSeatTypeName;
 	}
