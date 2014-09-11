@@ -25,6 +25,8 @@ import net.sf.json.JSONObject;
 
 public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 	public static final int STEP_QUERY_LEFT = 6;
+	public static final int STEP_QUERY_LEFT_LOG = 7;
+	public static final int STEP_QUERY_LEFT_QUERY = 8;
 	
 	private Object mLock = new Object();
 	private UiInterface mCallBack;
@@ -80,7 +82,9 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 					mAutoQueryStart = true;
 				}
 				mFrameMain.setQueryState(mAutoQueryStart);
-				stepQueryLeft();
+				//stepQueryLeft();
+				//stepQueryLeftLog();
+				stepQueryLeftQuery();
 			}
 		}/*else if(action == UI_ACTION_TICKET_AUTO_QUERY_END){
 			mAutoQueryStart = false;
@@ -98,13 +102,46 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 				new StringHttpResponse(this,STEP_QUERY_LEFT)));
 	}
 	
+	public void stepQueryLeftLog(){
+		LinkedHashMap<String, String> params = new LinkedHashMap<String, String>();
+		params.put("leftTicketDTO.train_date", mUserInfo.getDate());
+		params.put("leftTicketDTO.from_station", mUserInfo.getFromStationCode());
+		params.put("leftTicketDTO.to_station", mUserInfo.getToStationCode());
+		params.put("purpose_codes", "ADULT");
+		mRequestQueue.add(new MyHttpUrlRequest("https://kyfw.12306.cn/otn/leftTicket/log","GET",
+				HttpHeader.getHeader(UrlConstants.REF_TICKET_URL),params,
+				new StringHttpResponse(this,STEP_QUERY_LEFT_LOG)));
+	}
+	
+	public void stepQueryLeftQuery(){
+		LinkedHashMap<String, String> params = new LinkedHashMap<String, String>();
+		params.put("leftTicketDTO.train_date", mUserInfo.getDate());
+		params.put("leftTicketDTO.from_station", mUserInfo.getFromStationCode());
+		params.put("leftTicketDTO.to_station", mUserInfo.getToStationCode());
+		params.put("purpose_codes", "ADULT");
+		mRequestQueue.add(new MyHttpUrlRequest("https://kyfw.12306.cn/otn/leftTicket/queryT","GET",
+				HttpHeader.getHeader(UrlConstants.REF_TICKET_URL),params,
+				new StringHttpResponse(this,STEP_QUERY_LEFT_QUERY)));
+	}
+	
 	@Override
 	public void handleResponse(MyHttpResponse<?> response){
 		synchronized(mLock){		
 			Log.i("handleResponse,mStep ="+response.mStep);
+			/*
 			if(response.mResponseCode == 200){
 				StringHttpResponse strResponse = (StringHttpResponse)response;
 				//Log.i(strResponse.mResult);
+				parseTicketQuery(strResponse.mResult);
+			}
+			*/
+			if(response.mStep == STEP_QUERY_LEFT_LOG && response.mResponseCode == 200){
+				//StringHttpResponse strResponse = (StringHttpResponse)response;
+				//Log.i(strResponse.mResult);
+				//parseTicketQuery(strResponse.mResult);
+			}else if(response.mStep == STEP_QUERY_LEFT_QUERY && response.mResponseCode == 200){
+				StringHttpResponse strResponse = (StringHttpResponse)response;
+				Log.i(strResponse.mResult);
 				parseTicketQuery(strResponse.mResult);
 			}
 		}
@@ -112,7 +149,9 @@ public class ProcessMainQuery implements HttpResponseHandler,UiActionListener{
 	
 	public class TimerQueryTask extends TimerTask{
 	    public void run(){
-	    	stepQueryLeft();
+	    	//stepQueryLeft();
+	    	//stepQueryLeftLog();
+	    	stepQueryLeftQuery();
 	    }
 	}
 	//private TimerQueryTask mTimerQueryTask = new TimerQueryTask();
