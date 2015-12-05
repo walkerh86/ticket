@@ -24,6 +24,7 @@ public class FrameLogin extends JFrame{
 	private JTextField mUserNameInput;
 	private JPasswordField mUserPwInput;
 	private JTextArea mLogLabel;
+	private PanelCapta mPanelCapta;
 	
 	private UiActionListener mUiActionListener;
 	
@@ -37,7 +38,7 @@ public class FrameLogin extends JFrame{
 	private void initFrame(){
 		setTitle("µ«¬Ω");
 		setResizable(false);
-        setSize(310, 300); 
+        setSize(360, 420); 
         setLocationRelativeTo(null); //center in window
         addWindowListener(new WindowAdapter(){
         	public void windowClosing(WindowEvent e) { 
@@ -102,9 +103,9 @@ public class FrameLogin extends JFrame{
 		JLabel captcha = new JLabel();
 		captcha.setText("—È÷§¬Î£∫");
 		captcha.setBounds(xOffset, yOffset, LABEL_WIDTH, ROW_HEIGHT);		
-		panel.add(captcha);		
-		xOffset += LABEL_WIDTH;
+		panel.add(captcha);	
 		
+		xOffset += LABEL_WIDTH;
 		mCaptchaInput = new JTextField();
 		mCaptchaInput.requestFocusInWindow();
 		mCaptchaInput.setBounds(xOffset, yOffset, 110, ROW_HEIGHT);
@@ -120,26 +121,13 @@ public class FrameLogin extends JFrame{
 			}
 		});
 		panel.add(mCaptchaInput);
-		xOffset += 110+COL_GAP;
 		
-		mCaptchaImg = new JButton();
-		mCaptchaImg.setBounds(xOffset, yOffset+8, 78, 26);
-		mCaptchaImg.setBackground(Color.GRAY);
-		mCaptchaImg.setIcon(new ImageIcon("captcha.png"));
-		mCaptchaImg.addActionListener(new ActionListener(){
-			public void actionPerformed(ActionEvent evt) {
-				mUiActionListener.onUiAction(UiActionListener.UI_ACTION_UPDATE_CAPTCHA);
-			}
-		});
-		panel.add(mCaptchaImg);
 		
-		yOffset += ROW_HEIGHT;
 		
 		//row 4
-		xOffset = LEFT_PADDING; // left padding
-		yOffset += ROW_GAP;
+		xOffset += 110+10; // left padding
 		JButton loginBtn = new JButton();
-		loginBtn.setBounds(xOffset, yOffset, 260, ROW_HEIGHT);
+		loginBtn.setBounds(xOffset, yOffset, 100, ROW_HEIGHT);
 		loginBtn.setText("µ«¬Ω");
 		loginBtn.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent evt) {
@@ -147,10 +135,15 @@ public class FrameLogin extends JFrame{
 			}
 		});
 		panel.add(loginBtn);
+
 		yOffset += ROW_HEIGHT+10;
+		xOffset = LEFT_PADDING;
+
+		mPanelCapta = new PanelCapta(xOffset,yOffset);
+		panel.add(mPanelCapta);
 		
 		//row 5
-		
+		yOffset += 190;
 		xOffset = LEFT_PADDING; // left padding
 		mLogLabel = new JTextArea();
 		mLogLabel.setBackground(new Color(0,0,0,0));
@@ -201,12 +194,12 @@ public class FrameLogin extends JFrame{
 			showLog("«Î ‰»Î√‹¬Î£°");
 			return false;
 		}
-		
+		/*
 		if(TextUtil.isEmpty(mCaptchaInput.getText()) || mCaptchaInput.getText().length() < 4){
 			showLog("«Î ‰»Î—È÷§¬Î£°");
 			return false;
 		}
-		
+		*/
 		saveUserInfo();
 		
 		return true;
@@ -215,7 +208,7 @@ public class FrameLogin extends JFrame{
 	private void saveUserInfo(){
 		mUserInfo.setUserName(mUserNameInput.getText());
 		mUserInfo.setUserPw(new String(mUserPwInput.getPassword()));
-		mUserInfo.setCaptchaCode(mCaptchaInput.getText());
+		mUserInfo.setCaptchaCode(mPanelCapta.getCaptaRelust());
 	}
 	
 	public void checkCaptchaCodeFail(){
@@ -224,12 +217,14 @@ public class FrameLogin extends JFrame{
 	}
 	
 	public String getCaptchaCode(){
-		return(mCaptchaInput.getText());
+		//return(mCaptchaInput.getText());
+		return mPanelCapta.getCaptaRelust();
 	}
 	
 	public void setCaptchaIcon(ImageIcon icon){
 		Log.i("FrameLogin.setCaptchaIcon");
-		mCaptchaImg.setIcon(icon);
+		//mCaptchaImg.setIcon(icon);
+		mPanelCapta.setCaptaImg(icon);
 	}
 	
 	public void setUserInfo(UserInfo userInfo){

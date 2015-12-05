@@ -21,6 +21,8 @@ public class ProcessLogin implements HttpResponseHandler,UiActionListener{
 	public static final int STEP_LOGIN_AYNC_SUGGEST = 4;
 	public static final int STEP_LOGIN_REQUEST = 5;
 	public static final int STEP_LOGIN_INIT = 6;
+
+	public static final int STEP_LOGIN = 7;
 	
 	private Object mLock = new Object();
 	private UiInterface mCallBack;
@@ -68,6 +70,18 @@ public class ProcessLogin implements HttpResponseHandler,UiActionListener{
 				HttpHeader.getHeader(null),null,
 				new StringHttpResponse(this,STEP_GET_COOKIE)));
 	}
+
+	public void stepLoginInit(){
+		mRequestQueue.add(new MyHttpUrlRequest("https://kyfw.12306.cn/otn/login/init","GET",
+				HttpHeader.getHeader("https://kyfw.12306.cn/otn/"),null,
+				new StringHttpResponse(this,STEP_LOGIN_INIT)));
+	}
+
+	public void stepLogin(){
+		mRequestQueue.add(new MyHttpUrlRequest("https://kyfw.12306.cn/otn/login/","GET",
+				HttpHeader.getHeader("https://kyfw.12306.cn/otn/login/init"),null,
+				new StringHttpResponse(this,STEP_LOGIN)));
+	}
 	
 	public void stepGetLoginCaptcha(){
 		mRequestQueue.add(new MyHttpUrlRequest(UrlConstants.GET_LOGIN_CAPTCHA_URL,"GET",
@@ -77,8 +91,9 @@ public class ProcessLogin implements HttpResponseHandler,UiActionListener{
 	
 	public void stepCheckRandCodeAnsyn(){		
 		LinkedHashMap<String, String> params = new LinkedHashMap<String, String>();
-		params.put("randCode", mFrameLogin.getCaptchaCode());
 		params.put("rand", "sjrand");
+		params.put("randCode", mFrameLogin.getCaptchaCode());
+		Log.i("capta="+mFrameLogin.getCaptchaCode());
 		mRequestQueue.add(new MyHttpUrlRequest("https://kyfw.12306.cn/otn/passcodeNew/checkRandCodeAnsyn","POST",
 				HttpHeader.getHeader(UrlConstants.REF_LOGINPASSCODE_URL),params,
 				new StringHttpResponse(this,STEP_CHECK_CAPTCHA_CODE)));
@@ -117,6 +132,17 @@ public class ProcessLogin implements HttpResponseHandler,UiActionListener{
 				cookieManager.setCookie(strResponse.mHeaders);
 				Log.i(cookieManager.getCookieString());
 				
+				//stepGetLoginCaptcha();
+				stepLoginInit();
+			}else if(response.mStep == STEP_LOGIN_INIT){
+				StringHttpResponse strResponse = (StringHttpResponse)response;
+				CookieManager cookieManager = MainApp.getCookieManager();
+				cookieManager.setCookie(strResponse.mHeaders);
+				Log.i(cookieManager.getCookieString());
+				
+				stepGetLoginCaptcha();
+				//stepLogin();
+			}else if(response.mStep == STEP_LOGIN){
 				stepGetLoginCaptcha();
 			}else if(response.mStep == STEP_GET_LOGIN_CAPTCHA){
 				ImageHttpResponse imgResponse = (ImageHttpResponse)response;
@@ -154,8 +180,12 @@ public class ProcessLogin implements HttpResponseHandler,UiActionListener{
 		Log.i("parseCheckRandCodeAnsyn:"+response);
 		try{
 			JSONObject jObj = JSONObject.fromObject(response);
-			String result = jObj.getString("data");
-			if(result.equals("Y")){
+			String data = jObj.getString("data");
+			JSONObject jObjData = JSONObject.fromObject(data);
+			String result = jObjData.getString("result");
+			
+			Log.i(("parseCheckRandCodeAnsyn:result="+result));
+			if(result.equals("1")){
 				stepLoginAyncSuggest();
 			}else{
 				mFrameLogin.checkCaptchaCodeFail();
@@ -169,11 +199,14 @@ public class ProcessLogin implements HttpResponseHandler,UiActionListener{
 		String message = null;
 		try{
 			JSONObject jObj = JSONObject.fromObject(response);
-			message = jObj.getString("messages");
-			JSONObject jData = jObj.getJSONObject("data");
+			String data = jObj.getString("data");
+			JSONObject jData = JSONObject.fromObject(data);
 			String loginCheck = jData.getString("loginCheck");
 			if(loginCheck.equals("Y")){
-				stepLoginRequest();
+				//stepLoginRequest();
+				mCallBack.loginSuccess();
+			}else{
+				message = jObj.getString("messages");
 			}
 		}catch(JSONException e){
 			//error

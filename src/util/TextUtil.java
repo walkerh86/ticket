@@ -34,4 +34,20 @@ public class TextUtil {
 		
 		return dst;
 	}
+
+	public static String join(String... strs){
+		StringBuilder sb = new StringBuilder();
+		if(strs.length > 2){
+			sb.append(strs[1]);
+			for(int i=2;i<strs.length;i++){
+				sb.append(strs[0]);
+				sb.append(strs[i]);
+			}
+			return sb.toString();
+		}else if(strs.length == 2){
+			return strs[1];
+		}else{
+			return "";
+		}
+	}
 }
